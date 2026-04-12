@@ -1,5 +1,6 @@
 from django import forms
-from .models import Inspection
+from .models import Inspection, Vehicle
+
 
 class InspectionForm(forms.ModelForm):
     class Meta:
@@ -7,8 +8,8 @@ class InspectionForm(forms.ModelForm):
         fields = ['vehicle', 'image']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
+        kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-
-        if user:
-            self.fields['vehicle'].queryset = user.vehicle_set.all()
+        self.fields['vehicle'].queryset = Vehicle.objects.all()
+        self.fields['vehicle'].label = 'Транспортное средство'
+        self.fields['image'].label = 'Фотография'
