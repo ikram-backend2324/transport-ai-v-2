@@ -1,13 +1,31 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="card">
+<div class="card" style="max-width: 440px; margin: 0 auto;">
     <h2>Регистрация</h2>
 
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="modern-btn" type="submit">Создать аккаунт</button>
+
+        {% for field in form %}
+            <div style="margin-bottom: 16px;">
+                <label>{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;">
+            Создать аккаунт
+        </button>
     </form>
+
+    <p style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--muted);">
+        Уже есть аккаунт? <a href="/users/login/" class="link">Войти</a>
+    </p>
 </div>
 {% endblock %}
