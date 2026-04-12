@@ -180,7 +180,7 @@
             </div>
         </div>
 
-        <div class="analysis-text" id="analysisText">{{ inspection.result }}</div>
+        <div class="analysis-text" id="analysisText" data-raw="{{ inspection.result|escapejs }}"></div>
 
         <div class="conf-section">
             <div class="conf-label">
@@ -238,5 +238,18 @@ setTimeout(() => {
         confBadge.textContent = confidence + '% — высокая';
     }
 }, 300);
+
+// Format AI markdown response
+(function() {
+    const el = document.getElementById('analysisText');
+    if (!el) return;
+    const raw = el.getAttribute('data-raw') || '';
+    const html = raw.split('\n').map(line => {
+        line = line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:600;">$1</strong>');
+        if (!line.trim()) return '';
+        return '<p style="margin:0 0 10px 0;line-height:1.65;">' + line + '</p>';
+    }).filter(x => x).join('');
+    el.innerHTML = html;
+})();
 </script>
 {% endblock %}
