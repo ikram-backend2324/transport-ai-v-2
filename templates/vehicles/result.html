@@ -180,7 +180,8 @@
             </div>
         </div>
 
-        <div class="analysis-text" id="analysisText" data-raw="{{ inspection.result|escapejs }}"></div>
+        <div class="analysis-text" id="analysisText"></div>
+    {{ inspection.result|json_script:"resultData" }}
 
         <div class="conf-section">
             <div class="conf-label">
@@ -243,8 +244,10 @@ setTimeout(() => {
 (function() {
     const el = document.getElementById('analysisText');
     if (!el) return;
-    const raw = el.getAttribute('data-raw') || '';
+    const raw = JSON.parse(document.getElementById('resultData').textContent) || '';
     const html = raw.split('\n').map(line => {
+        if (line.trim().startsWith('#')) return '';
+        if (line.trim().startsWith('УВЕРЕННОСТЬ:')) return '';
         line = line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:600;">$1</strong>');
         if (!line.trim()) return '';
         return '<p style="margin:0 0 10px 0;line-height:1.65;">' + line + '</p>';
