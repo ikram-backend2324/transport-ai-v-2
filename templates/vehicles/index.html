@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Проверки</h2>
+
+    <a class="btn" href="/upload/">+ Новая проверка</a>
+
+    <ul>
+        {% for i in inspections %}
+        <li>
+            <div>
+                <strong>{{ i.vehicle.name }}</strong><br>
+                <span class="badge">{{ i.result }}</span>
+            </div>
+            <a class="link" href="/result/{{ i.id }}/">Подробнее</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

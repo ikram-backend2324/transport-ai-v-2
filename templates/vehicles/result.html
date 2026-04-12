@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+body {
+    background: radial-gradient(circle at top, #0f172a, #020617);
+    font-family: 'Segoe UI', sans-serif;
+    color: #e2e8f0;
+}
+
+/* фон */
+.bg-anim {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+.bg-anim span {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #38bdf8;
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: float 12s linear infinite;
+}
+.bg-anim span:nth-child(1){left:10%}
+.bg-anim span:nth-child(2){left:30%}
+.bg-anim span:nth-child(3){left:60%}
+.bg-anim span:nth-child(4){left:80%}
+
+@keyframes float {
+    from { transform: translateY(100vh); }
+    to { transform: translateY(-10vh); }
+}
+
+/* карточка */
+.card {
+    max-width: 520px;
+    margin: 60px auto;
+    background: rgba(15,23,42,0.95);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(0,200,255,0.15);
+    animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(15px);}
+    to {opacity:1;}
+}
+
+/* изображение */
+img {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+/* loader */
+.loader {
+    text-align: center;
+    margin: 20px 0;
+}
+.spinner {
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top: 4px solid #38bdf8;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin: auto;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* результат */
+.result-box {
+    display: none;
+    background: rgba(2,6,23,0.8);
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 15px;
+}
+
+/* прогресс */
+.progress {
+    background: #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+.progress-bar {
+    height: 10px;
+    background: linear-gradient(90deg, #22c55e, #38bdf8);
+    width: 0%;
+    transition: width 1s ease;
+}
+
+/* риск */
+.risk {
+    margin-top: 10px;
+    font-weight: bold;
+}
+.low { color: #22c55e; }
+.medium { color: #f59e0b; }
+.high { color: #ef4444; }
+
+/* кнопка */
+.btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg,#38bdf8,#0ea5e9);
+    border-radius: 10px;
+    text-decoration: none;
+    color: white;
+}
+</style>
+
+<div class="bg-anim">
+    <span></span><span></span><span></span><span></span>
+</div>
+
+<div class="card">
+    <h2>Результат анализа</h2>
+
+    <img src="{{ inspection.image.url }}">
+
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Анализ изображения...</p>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result-box" id="resultBox">
+        <p>{{ inspection.result }}</p>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="risk" id="riskText"></div>
+    </div>
+
+    <a class="btn" href="/">Назад</a>
+</div>
+
+<script>
+const confidence = {{ inspection.confidence }};
+
+// имитация загрузки
+setTimeout(() => {
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("resultBox").style.display = "block";
+
+    // прогресс бар
+    document.getElementById("progressBar").style.width = confidence + "%";
+
+    // риск
+    let riskText = document.getElementById("riskText");
+
+    if (confidence < 40) {
+        riskText.innerText = "Низкая уверенность (Low Risk)";
+        riskText.className = "risk low";
+    } else if (confidence < 70) {
+        riskText.innerText = "Средняя уверенность (Medium Risk)";
+        riskText.className = "risk medium";
+    } else {
+        riskText.innerText = "Высокая уверенность (High Risk)";
+        riskText.className = "risk high";
+    }
+
+}, 1500);
+</script>
+
+{% endblock %}
