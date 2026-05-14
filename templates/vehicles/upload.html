@@ -2,146 +2,36 @@
 
 {% block content %}
 <style>
-    .upload-area {
-        border: 2px dashed var(--border);
-        border-radius: var(--radius);
-        padding: 40px 24px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.25s;
-        background: var(--bg);
-        margin-bottom: 20px;
-        position: relative;
-    }
-
-    .upload-area:hover, .upload-area.drag-over {
-        border-color: var(--accent);
-        background: rgba(56,189,248,0.04);
-    }
-
-    .upload-icon { font-size: 40px; margin-bottom: 12px; display: block; }
-
-    .upload-area p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
-
-    .upload-area input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
-    }
-
-    .preview-box {
-        display: none;
-        margin-bottom: 20px;
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        position: relative;
-    }
-
-    .preview-box img {
-        width: 100%;
-        max-height: 300px;
-        object-fit: cover;
-        display: block;
-        border-radius: 0;
-    }
-
-    .preview-label {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(11,17,32,0.8);
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 20px;
-        border: 1px solid rgba(56,189,248,0.3);
-        backdrop-filter: blur(8px);
-    }
-
-    .form-row { margin-bottom: 18px; }
-
-    /* loading overlay */
-    .loading-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(11,17,32,0.92);
-        backdrop-filter: blur(12px);
-        z-index: 999;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-    }
-
-    .loading-overlay.active {
-        display: flex;
-        animation: fade-in 0.3s ease;
-    }
-
-    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-
-    .scanner { position: relative; width: 180px; height: 180px; }
-
-    .scanner-ring {
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        border: 2px solid rgba(56,189,248,0.15);
-    }
-
-    .scanner-ring.r1 { border-top-color: var(--accent); animation: spin 1s linear infinite; }
-    .scanner-ring.r2 { inset: 16px; border-top-color: transparent; border-right-color: rgba(56,189,248,0.5); animation: spin 1.5s linear infinite reverse; }
-    .scanner-ring.r3 { inset: 32px; border-top-color: rgba(56,189,248,0.7); animation: spin 2s linear infinite; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .scanner-core {
-        position: absolute;
-        inset: 48px;
-        background: rgba(56,189,248,0.08);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 32px;
-        animation: pulse-core 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-core {
-        0%, 100% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.1); opacity: 1; }
-    }
-
-    .loading-title { font-size: 20px; font-weight: 600; color: var(--text); }
-
-    .loading-steps { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-
-    .step {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 14px;
-        color: var(--muted);
-        opacity: 0.4;
-        transition: all 0.4s;
-    }
-
-    .step.active { color: var(--accent); opacity: 1; }
-    .step.done { color: var(--success); opacity: 0.8; }
-
-    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-    .step.active .step-dot { animation: blink 1s ease infinite; }
-
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-    .progress-track { width: 280px; height: 3px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; width: 0%; transition: width 0.6s ease; }
+    .upload-area { border:2px dashed var(--border); border-radius:var(--radius); padding:40px 24px; text-align:center; cursor:pointer; transition:all 0.25s; background:var(--bg); margin-bottom:20px; position:relative; }
+    .upload-area:hover,.upload-area.drag-over { border-color:var(--accent); background:rgba(56,189,248,0.04); }
+    .upload-icon { font-size:40px; margin-bottom:12px; display:block; }
+    .upload-area p { color:var(--muted); font-size:14px; margin-bottom:12px; }
+    .upload-area input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .preview-box { display:none; margin-bottom:20px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); position:relative; }
+    .preview-box img { width:100%; max-height:300px; object-fit:cover; display:block; border-radius:0; }
+    .preview-label { position:absolute; top:10px; left:10px; background:rgba(11,17,32,0.8); color:var(--accent); font-size:12px; font-weight:500; padding:4px 10px; border-radius:20px; border:1px solid rgba(56,189,248,0.3); backdrop-filter:blur(8px); }
+    .form-row { margin-bottom:18px; }
+    .loading-overlay { display:none; position:fixed; inset:0; background:rgba(11,17,32,0.92); backdrop-filter:blur(12px); z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
+    .loading-overlay.active { display:flex; animation:fade-in 0.3s ease; }
+    @keyframes fade-in { from{opacity:0} to{opacity:1} }
+    .scanner { position:relative; width:180px; height:180px; }
+    .scanner-ring { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(56,189,248,0.15); }
+    .scanner-ring.r1 { border-top-color:var(--accent); animation:spin 1s linear infinite; }
+    .scanner-ring.r2 { inset:16px; border-top-color:transparent; border-right-color:rgba(56,189,248,0.5); animation:spin 1.5s linear infinite reverse; }
+    .scanner-ring.r3 { inset:32px; border-top-color:rgba(56,189,248,0.7); animation:spin 2s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .scanner-core { position:absolute; inset:48px; background:rgba(56,189,248,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; animation:pulse-core 2s ease-in-out infinite; }
+    @keyframes pulse-core { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(1.1);opacity:1} }
+    .loading-title { font-size:20px; font-weight:600; color:var(--text); }
+    .loading-steps { display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
+    .step { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); opacity:.4; transition:all 0.4s; }
+    .step.active { color:var(--accent); opacity:1; }
+    .step.done { color:var(--success); opacity:.8; }
+    .step-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0; }
+    .step.active .step-dot { animation:blink 1s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .progress-track { width:280px; height:3px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; width:0%; transition:width 0.6s ease; }
 </style>
 
 <!-- Loading overlay -->
@@ -152,27 +42,21 @@
         <div class="scanner-ring r3"></div>
         <div class="scanner-core">🔍</div>
     </div>
-
     <div class="loading-title" data-i18n="upload_analyzing">Анализ изображения</div>
-
     <div class="loading-steps">
         <div class="step active" id="step1"><div class="step-dot"></div><span data-i18n="upload_step1">Загрузка изображения...</span></div>
         <div class="step" id="step2"><div class="step-dot"></div><span data-i18n="upload_step2">Распознавание объектов...</span></div>
         <div class="step" id="step3"><div class="step-dot"></div><span data-i18n="upload_step3">AI-диагностика...</span></div>
         <div class="step" id="step4"><div class="step-dot"></div><span data-i18n="upload_step4">Формирование отчёта...</span></div>
     </div>
-
-    <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
-    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
 <div class="card">
-    <h2 data-i18n="upload_title">Загрузка изображения</h2>
+    <h2 data-i18n="upload_card_title">Загрузка изображения</h2>
 
     <form method="post" enctype="multipart/form-data" id="uploadForm">
         {% csrf_token %}
-        <!-- Hidden language field: value set by JS on submit -->
         <input type="hidden" name="language" id="langInput" value="ru">
 
         {% for field in form %}
@@ -189,7 +73,7 @@
                 </div>
             {% else %}
                 <div class="form-row">
-                    <label>{{ field.label }}</label>
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
                 </div>
             {% endif %}
@@ -211,7 +95,6 @@ const loadingOverlay = document.getElementById('loadingOverlay');
 const progressFill = document.getElementById('progressFill');
 const langInput = document.getElementById('langInput');
 
-// Sync hidden language input with current cookie
 langInput.value = getCookie('lang') || 'ru';
 
 fileInput.addEventListener('change', () => {
@@ -225,84 +108,27 @@ fileInput.addEventListener('change', () => {
 uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
 uploadArea.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
+    e.preventDefault(); uploadArea.classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (file) {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput.files = dt.files;
-        fileInput.dispatchEvent(new Event('change'));
-    }
+    if (file) { const dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); }
 });
 
 uploadForm.addEventListener('submit', () => {
-    // Ensure language is synced just before submit
     langInput.value = getCookie('lang') || 'ru';
     loadingOverlay.classList.add('active');
-
     const steps = [
-        { el: document.getElementById('step1'), delay: 0, progress: 15 },
-        { el: document.getElementById('step2'), delay: 1200, progress: 40 },
-        { el: document.getElementById('step3'), delay: 3000, progress: 70 },
-        { el: document.getElementById('step4'), delay: 5500, progress: 90 },
+        {el:document.getElementById('step1'),delay:0,progress:15},
+        {el:document.getElementById('step2'),delay:1200,progress:40},
+        {el:document.getElementById('step3'),delay:3000,progress:70},
+        {el:document.getElementById('step4'),delay:5500,progress:90},
     ];
-
-    steps.forEach((s, i) => {
+    steps.forEach((s,i) => {
         setTimeout(() => {
-            if (i > 0) {
-                steps[i-1].el.classList.remove('active');
-                steps[i-1].el.classList.add('done');
-            }
+            if(i>0){steps[i-1].el.classList.remove('active');steps[i-1].el.classList.add('done');}
             s.el.classList.add('active');
-            progressFill.style.width = s.progress + '%';
+            progressFill.style.width = s.progress+'%';
         }, s.delay);
     });
 });
-
-// Page translations
-const PAGE_T = {
-    uz: {
-        upload_title:     "Rasmni yuklash",
-        upload_analyzing: "Tasvir tahlili",
-        upload_step1:     "Rasmni yuklash...",
-        upload_step2:     "Obyektlarni aniqlash...",
-        upload_step3:     "AI-diagnostika...",
-        upload_step4:     "Hisobot tayyorlash...",
-        upload_drag:      "Rasmni sudrab olib keling yoki tanlash uchun bosing",
-        upload_formats:   "JPG, PNG, WEBP — 10 MBgacha",
-        upload_preview:   "Ko'rinish",
-        upload_submit:    "Tahlil qilish",
-    },
-    ru: {
-        upload_title:     "Загрузка изображения",
-        upload_analyzing: "Анализ изображения",
-        upload_step1:     "Загрузка изображения...",
-        upload_step2:     "Распознавание объектов...",
-        upload_step3:     "AI-диагностика...",
-        upload_step4:     "Формирование отчёта...",
-        upload_drag:      "Перетащите фото или нажмите для выбора",
-        upload_formats:   "JPG, PNG, WEBP до 10 МБ",
-        upload_preview:   "Предпросмотр",
-        upload_submit:    "Анализировать",
-    },
-    en: {
-        upload_title:     "Upload Image",
-        upload_analyzing: "Analysing Image",
-        upload_step1:     "Uploading image...",
-        upload_step2:     "Detecting objects...",
-        upload_step3:     "AI diagnostics...",
-        upload_step4:     "Generating report...",
-        upload_drag:      "Drag & drop photo or click to browse",
-        upload_formats:   "JPG, PNG, WEBP up to 10 MB",
-        upload_preview:   "Preview",
-        upload_submit:    "Analyse",
-    },
-};
-
-Object.keys(PAGE_T).forEach(lang => {
-    TRANSLATIONS[lang] = Object.assign(TRANSLATIONS[lang] || {}, PAGE_T[lang]);
-});
-applyLang(getCookie('lang') || 'ru');
 </script>
 {% endblock %}
