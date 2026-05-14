@@ -24,11 +24,17 @@ def upload(request):
         inspection.user = request.user
         inspection.save()
 
-        result = analyze_image(inspection.image.path)
+        # Read language from POST or cookie
+        language = request.POST.get('language') or request.COOKIES.get('lang', 'ru')
+
+        result = analyze_image(inspection.image.path, language=language)
         inspection.result = result["text"]
         inspection.confidence = result["confidence"]
         inspection.save()
-        return redirect('result', inspection.id)
+
+        response = redirect('result', inspection.id)
+        response.set_cookie('lang', language, max_age=60*60*24*365)
+        return response
 
     return render(request, 'vehicles/upload.html', {'form': form})
 

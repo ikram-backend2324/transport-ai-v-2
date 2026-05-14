@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="card" style="max-width: 440px; margin: 0 auto;">
-    <h2>Регистрация</h2>
+    <h2 data-i18n="reg_title">Регистрация</h2>
 
     <form method="post">
         {% csrf_token %}
@@ -19,13 +19,39 @@
             </div>
         {% endfor %}
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;">
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;" data-i18n="reg_btn">
             Создать аккаунт
         </button>
     </form>
 
     <p style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--muted);">
-        Уже есть аккаунт? <a href="/users/login/" class="link">Войти</a>
+        <span data-i18n="reg_have_account">Уже есть аккаунт?</span>
+        <a href="/users/login/" class="link" data-i18n="reg_login">Войти</a>
     </p>
 </div>
+
+<script>
+const PAGE_T = {
+    uz: {
+        reg_title:        "Ro'yxatdan o'tish",
+        reg_btn:          "Hisob yaratish",
+        reg_have_account: "Allaqachon hisobingiz bormi?",
+        reg_login:        "Kirish",
+    },
+    ru: {
+        reg_title:        "Регистрация",
+        reg_btn:          "Создать аккаунт",
+        reg_have_account: "Уже есть аккаунт?",
+        reg_login:        "Войти",
+    },
+    en: {
+        reg_title:        "Register",
+        reg_btn:          "Create Account",
+        reg_have_account: "Already have an account?",
+        reg_login:        "Sign In",
+    },
+};
+Object.keys(PAGE_T).forEach(l => { TRANSLATIONS[l] = Object.assign(TRANSLATIONS[l] || {}, PAGE_T[l]); });
+applyLang(getCookie('lang') || 'ru');
+</script>
 {% endblock %}

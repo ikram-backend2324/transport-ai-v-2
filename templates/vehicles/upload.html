@@ -19,17 +19,9 @@
         background: rgba(56,189,248,0.04);
     }
 
-    .upload-icon {
-        font-size: 40px;
-        margin-bottom: 12px;
-        display: block;
-    }
+    .upload-icon { font-size: 40px; margin-bottom: 12px; display: block; }
 
-    .upload-area p {
-        color: var(--muted);
-        font-size: 14px;
-        margin-bottom: 12px;
-    }
+    .upload-area p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
 
     .upload-area input[type="file"] {
         position: absolute;
@@ -71,9 +63,7 @@
         backdrop-filter: blur(8px);
     }
 
-    .form-row {
-        margin-bottom: 18px;
-    }
+    .form-row { margin-bottom: 18px; }
 
     /* loading overlay */
     .loading-overlay {
@@ -94,16 +84,9 @@
         animation: fade-in 0.3s ease;
     }
 
-    @keyframes fade-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-    .scanner {
-        position: relative;
-        width: 180px;
-        height: 180px;
-    }
+    .scanner { position: relative; width: 180px; height: 180px; }
 
     .scanner-ring {
         position: absolute;
@@ -112,27 +95,11 @@
         border: 2px solid rgba(56,189,248,0.15);
     }
 
-    .scanner-ring.r1 {
-        border-top-color: var(--accent);
-        animation: spin 1s linear infinite;
-    }
+    .scanner-ring.r1 { border-top-color: var(--accent); animation: spin 1s linear infinite; }
+    .scanner-ring.r2 { inset: 16px; border-top-color: transparent; border-right-color: rgba(56,189,248,0.5); animation: spin 1.5s linear infinite reverse; }
+    .scanner-ring.r3 { inset: 32px; border-top-color: rgba(56,189,248,0.7); animation: spin 2s linear infinite; }
 
-    .scanner-ring.r2 {
-        inset: 16px;
-        border-top-color: transparent;
-        border-right-color: rgba(56,189,248,0.5);
-        animation: spin 1.5s linear infinite reverse;
-    }
-
-    .scanner-ring.r3 {
-        inset: 32px;
-        border-top-color: rgba(56,189,248,0.7);
-        animation: spin 2s linear infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .scanner-core {
         position: absolute;
@@ -151,18 +118,9 @@
         50% { transform: scale(1.1); opacity: 1; }
     }
 
-    .loading-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text);
-    }
+    .loading-title { font-size: 20px; font-weight: 600; color: var(--text); }
 
-    .loading-steps {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
-    }
+    .loading-steps { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 
     .step {
         display: flex;
@@ -174,48 +132,16 @@
         transition: all 0.4s;
     }
 
-    .step.active {
-        color: var(--accent);
-        opacity: 1;
-    }
+    .step.active { color: var(--accent); opacity: 1; }
+    .step.done { color: var(--success); opacity: 0.8; }
 
-    .step.done {
-        color: var(--success);
-        opacity: 0.8;
-    }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .step.active .step-dot { animation: blink 1s ease infinite; }
 
-    .step-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: currentColor;
-        flex-shrink: 0;
-    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    .step.active .step-dot {
-        animation: blink 1s ease infinite;
-    }
-
-    @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
-    }
-
-    .progress-track {
-        width: 280px;
-        height: 3px;
-        background: var(--surface2);
-        border-radius: 3px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--accent), var(--accent2));
-        border-radius: 3px;
-        width: 0%;
-        transition: width 0.6s ease;
-    }
+    .progress-track { width: 280px; height: 3px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; width: 0%; transition: width 0.6s ease; }
 </style>
 
 <!-- Loading overlay -->
@@ -227,25 +153,13 @@
         <div class="scanner-core">🔍</div>
     </div>
 
-    <div class="loading-title">Анализ изображения</div>
+    <div class="loading-title" data-i18n="upload_analyzing">Анализ изображения</div>
 
     <div class="loading-steps">
-        <div class="step active" id="step1">
-            <div class="step-dot"></div>
-            Загрузка изображения...
-        </div>
-        <div class="step" id="step2">
-            <div class="step-dot"></div>
-            Распознавание объектов...
-        </div>
-        <div class="step" id="step3">
-            <div class="step-dot"></div>
-            AI-диагностика...
-        </div>
-        <div class="step" id="step4">
-            <div class="step-dot"></div>
-            Формирование отчёта...
-        </div>
+        <div class="step active" id="step1"><div class="step-dot"></div><span data-i18n="upload_step1">Загрузка изображения...</span></div>
+        <div class="step" id="step2"><div class="step-dot"></div><span data-i18n="upload_step2">Распознавание объектов...</span></div>
+        <div class="step" id="step3"><div class="step-dot"></div><span data-i18n="upload_step3">AI-диагностика...</span></div>
+        <div class="step" id="step4"><div class="step-dot"></div><span data-i18n="upload_step4">Формирование отчёта...</span></div>
     </div>
 
     <div class="progress-track">
@@ -254,22 +168,24 @@
 </div>
 
 <div class="card">
-    <h2>Загрузка изображения</h2>
+    <h2 data-i18n="upload_title">Загрузка изображения</h2>
 
     <form method="post" enctype="multipart/form-data" id="uploadForm">
         {% csrf_token %}
+        <!-- Hidden language field: value set by JS on submit -->
+        <input type="hidden" name="language" id="langInput" value="ru">
 
         {% for field in form %}
             {% if field.widget_type == 'file' or 'image' in field.html_name %}
                 <div class="upload-area" id="uploadArea">
                     <span class="upload-icon">📷</span>
-                    <p>Перетащите фото или нажмите для выбора</p>
-                    <p style="font-size:12px;">JPG, PNG, WEBP до 10 МБ</p>
+                    <p data-i18n="upload_drag">Перетащите фото или нажмите для выбора</p>
+                    <p style="font-size:12px;" data-i18n="upload_formats">JPG, PNG, WEBP до 10 МБ</p>
                     {{ field }}
                 </div>
                 <div class="preview-box" id="previewBox">
                     <img id="previewImg" src="" alt="preview">
-                    <span class="preview-label">Предпросмотр</span>
+                    <span class="preview-label" data-i18n="upload_preview">Предпросмотр</span>
                 </div>
             {% else %}
                 <div class="form-row">
@@ -280,7 +196,7 @@
         {% endfor %}
 
         <button type="submit" class="btn btn-primary" id="submitBtn">
-            🔍 Анализировать
+            🔍 <span data-i18n="upload_submit">Анализировать</span>
         </button>
     </form>
 </div>
@@ -293,15 +209,16 @@ const uploadArea = document.getElementById('uploadArea');
 const uploadForm = document.getElementById('uploadForm');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const progressFill = document.getElementById('progressFill');
+const langInput = document.getElementById('langInput');
+
+// Sync hidden language input with current cookie
+langInput.value = getCookie('lang') || 'ru';
 
 fileInput.addEventListener('change', () => {
     const file = fileInput.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
-        previewImg.src = e.target.result;
-        previewBox.style.display = 'block';
-    };
+    reader.onload = e => { previewImg.src = e.target.result; previewBox.style.display = 'block'; };
     reader.readAsDataURL(file);
 });
 
@@ -320,6 +237,8 @@ uploadArea.addEventListener('drop', e => {
 });
 
 uploadForm.addEventListener('submit', () => {
+    // Ensure language is synced just before submit
+    langInput.value = getCookie('lang') || 'ru';
     loadingOverlay.classList.add('active');
 
     const steps = [
@@ -340,5 +259,50 @@ uploadForm.addEventListener('submit', () => {
         }, s.delay);
     });
 });
+
+// Page translations
+const PAGE_T = {
+    uz: {
+        upload_title:     "Rasmni yuklash",
+        upload_analyzing: "Tasvir tahlili",
+        upload_step1:     "Rasmni yuklash...",
+        upload_step2:     "Obyektlarni aniqlash...",
+        upload_step3:     "AI-diagnostika...",
+        upload_step4:     "Hisobot tayyorlash...",
+        upload_drag:      "Rasmni sudrab olib keling yoki tanlash uchun bosing",
+        upload_formats:   "JPG, PNG, WEBP — 10 MBgacha",
+        upload_preview:   "Ko'rinish",
+        upload_submit:    "Tahlil qilish",
+    },
+    ru: {
+        upload_title:     "Загрузка изображения",
+        upload_analyzing: "Анализ изображения",
+        upload_step1:     "Загрузка изображения...",
+        upload_step2:     "Распознавание объектов...",
+        upload_step3:     "AI-диагностика...",
+        upload_step4:     "Формирование отчёта...",
+        upload_drag:      "Перетащите фото или нажмите для выбора",
+        upload_formats:   "JPG, PNG, WEBP до 10 МБ",
+        upload_preview:   "Предпросмотр",
+        upload_submit:    "Анализировать",
+    },
+    en: {
+        upload_title:     "Upload Image",
+        upload_analyzing: "Analysing Image",
+        upload_step1:     "Uploading image...",
+        upload_step2:     "Detecting objects...",
+        upload_step3:     "AI diagnostics...",
+        upload_step4:     "Generating report...",
+        upload_drag:      "Drag & drop photo or click to browse",
+        upload_formats:   "JPG, PNG, WEBP up to 10 MB",
+        upload_preview:   "Preview",
+        upload_submit:    "Analyse",
+    },
+};
+
+Object.keys(PAGE_T).forEach(lang => {
+    TRANSLATIONS[lang] = Object.assign(TRANSLATIONS[lang] || {}, PAGE_T[lang]);
+});
+applyLang(getCookie('lang') || 'ru');
 </script>
 {% endblock %}

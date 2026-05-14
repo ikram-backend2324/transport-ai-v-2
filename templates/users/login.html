@@ -2,14 +2,42 @@
 
 {% block content %}
 <div class="card">
-    <h2>Вход</h2>
+    <h2 data-i18n="login_title">Вход</h2>
 
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button class="modern-btn" type="submit">Войти</button>
+        <button class="modern-btn" type="submit" data-i18n="login_btn">Войти</button>
     </form>
 
-    <p>Нет аккаунта? <a class="link" href="/users/register/">Регистрация</a></p>
+    <p style="margin-top: 16px; font-size: 13px; color: var(--muted);">
+        <span data-i18n="login_no_account">Нет аккаунта?</span>
+        <a class="link" href="/users/register/" data-i18n="login_register">Регистрация</a>
+    </p>
 </div>
+
+<script>
+const PAGE_T = {
+    uz: {
+        login_title:      "Kirish",
+        login_btn:        "Kirish",
+        login_no_account: "Akkount yo'qmi?",
+        login_register:   "Ro'yxatdan o'tish",
+    },
+    ru: {
+        login_title:      "Вход",
+        login_btn:        "Войти",
+        login_no_account: "Нет аккаунта?",
+        login_register:   "Регистрация",
+    },
+    en: {
+        login_title:      "Sign In",
+        login_btn:        "Sign In",
+        login_no_account: "No account?",
+        login_register:   "Register",
+    },
+};
+Object.keys(PAGE_T).forEach(l => { TRANSLATIONS[l] = Object.assign(TRANSLATIONS[l] || {}, PAGE_T[l]); });
+applyLang(getCookie('lang') || 'ru');
+</script>
 {% endblock %}

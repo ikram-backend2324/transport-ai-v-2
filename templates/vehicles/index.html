@@ -101,12 +101,12 @@
 
 <div class="page-header">
     <h2>
-        Проверки
+        <span data-i18n="index_title">Проверки</span>
         {% if inspections %}
             <span class="count-badge">{{ inspections|length }}</span>
         {% endif %}
     </h2>
-    <a href="/upload/" class="btn btn-primary">+ Новая проверка</a>
+    <a href="/upload/" class="btn btn-primary" data-i18n="index_new">+ Новая проверка</a>
 </div>
 
 <div class="card">
@@ -138,10 +138,43 @@
     {% else %}
         <div class="empty-state">
             <span class="empty-icon">📭</span>
-            <p style="font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 8px;">Проверок пока нет</p>
-            <p style="font-size: 14px; margin-bottom: 20px;">Загрузите фото автомобиля для анализа</p>
-            <a href="/upload/" class="btn btn-primary">Начать проверку</a>
+            <p style="font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 8px;" data-i18n="index_empty_title">Проверок пока нет</p>
+            <p style="font-size: 14px; margin-bottom: 20px;" data-i18n="index_empty_sub">Загрузите фото автомобиля для анализа</p>
+            <a href="/upload/" class="btn btn-primary" data-i18n="index_start">Начать проверку</a>
         </div>
     {% endif %}
 </div>
+
+<script>
+// Extend TRANSLATIONS with page-specific keys
+const PAGE_T = {
+    uz: {
+        index_title:      "Tekshirishlar",
+        index_new:        "+ Yangi tekshiruv",
+        index_empty_title:"Hali tekshirishlar yo'q",
+        index_empty_sub:  "Tahlil qilish uchun avtomobil rasmini yuklang",
+        index_start:      "Tekshirishni boshlash",
+    },
+    ru: {
+        index_title:      "Проверки",
+        index_new:        "+ Новая проверка",
+        index_empty_title:"Проверок пока нет",
+        index_empty_sub:  "Загрузите фото автомобиля для анализа",
+        index_start:      "Начать проверку",
+    },
+    en: {
+        index_title:      "Inspections",
+        index_new:        "+ New Inspection",
+        index_empty_title:"No inspections yet",
+        index_empty_sub:  "Upload a vehicle photo to start analysis",
+        index_start:      "Start Inspection",
+    },
+};
+
+// Merge into global TRANSLATIONS and re-apply
+Object.keys(PAGE_T).forEach(lang => {
+    TRANSLATIONS[lang] = Object.assign(TRANSLATIONS[lang] || {}, PAGE_T[lang]);
+});
+applyLang(getCookie('lang') || 'ru');
+</script>
 {% endblock %}
