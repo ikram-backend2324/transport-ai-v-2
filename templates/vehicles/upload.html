@@ -2,55 +2,128 @@
 
 {% block content %}
 <style>
-    .upload-area { border:2px dashed var(--border); border-radius:var(--radius); padding:40px 24px; text-align:center; cursor:pointer; transition:all 0.25s; background:var(--bg); margin-bottom:20px; position:relative; }
-    .upload-area:hover,.upload-area.drag-over { border-color:var(--accent); background:rgba(56,189,248,0.04); }
-    .upload-icon { font-size:40px; margin-bottom:12px; display:block; }
-    .upload-area p { color:var(--muted); font-size:14px; margin-bottom:12px; }
-    .upload-area input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .upload-zone {
+        border:2px dashed rgba(0,210,255,0.2); border-radius:var(--radius);
+        padding:48px 24px; text-align:center; cursor:pointer; transition:all 0.3s;
+        background:var(--surface2); margin-bottom:20px; position:relative; overflow:hidden;
+    }
+    .upload-zone::before {
+        content:''; position:absolute; inset:0;
+        background:radial-gradient(ellipse 60% 60% at 50% 50%,rgba(0,210,255,0.04) 0%,transparent 70%);
+        opacity:0; transition:opacity 0.3s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+        border-color:var(--accent);
+        background:rgba(0,210,255,0.04);
+        box-shadow:0 0 30px rgba(0,210,255,0.08), inset 0 0 30px rgba(0,210,255,0.04);
+    }
+    .upload-zone:hover::before, .upload-zone.drag-over::before { opacity:1; }
+    .upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .upload-icon-wrap {
+        width:72px; height:72px; margin:0 auto 20px;
+        background:linear-gradient(135deg,rgba(0,210,255,0.12),rgba(0,153,204,0.06));
+        border:1px solid rgba(0,210,255,0.2); border-radius:20px;
+        display:flex; align-items:center; justify-content:center; font-size:32px;
+        position:relative; transition:all 0.3s;
+    }
+    .upload-zone:hover .upload-icon-wrap {
+        transform:translateY(-4px);
+        box-shadow:0 8px 24px rgba(0,210,255,0.2);
+        border-color:rgba(0,210,255,0.4);
+    }
+    .upload-icon-wrap::after {
+        content:''; position:absolute; inset:-1px; border-radius:21px;
+        background:linear-gradient(135deg,rgba(0,210,255,0.3),transparent,rgba(0,255,179,0.15));
+        opacity:0.4;
+    }
+    .upload-title { font-family:var(--font-d); font-size:16px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--text); margin-bottom:8px; }
+    .upload-sub { color:var(--muted); font-size:13px; margin-bottom:4px; }
+    .upload-formats { color:var(--muted2); font-size:11px; font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; }
+
+    /* Preview */
     .preview-box { display:none; margin-bottom:20px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); position:relative; }
-    .preview-box img { width:100%; max-height:300px; object-fit:cover; display:block; border-radius:0; }
-    .preview-label { position:absolute; top:10px; left:10px; background:rgba(11,17,32,0.8); color:var(--accent); font-size:12px; font-weight:500; padding:4px 10px; border-radius:20px; border:1px solid rgba(56,189,248,0.3); backdrop-filter:blur(8px); }
-    .form-row { margin-bottom:18px; }
-    /* Loading overlay */
-    .loading-overlay { display:none; position:fixed; inset:0; background:rgba(11,17,32,0.92); backdrop-filter:blur(12px); z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
-    .loading-overlay.active { display:flex; animation:fade-in 0.3s ease; }
+    .preview-box img { width:100%; max-height:280px; object-fit:cover; display:block; border-radius:0; }
+    .preview-label { position:absolute; top:10px; left:10px; background:rgba(7,10,18,0.85); color:var(--accent); font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; border:1px solid rgba(0,210,255,0.3); backdrop-filter:blur(8px); font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; }
+
+    /* ── Loading overlay ─────────────────────────────────────────── */
+    .loading-overlay {
+        display:none; position:fixed; inset:0;
+        background:rgba(7,10,18,0.95); backdrop-filter:blur(20px) saturate(180%);
+        z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:28px;
+    }
+    .loading-overlay.active { display:flex; animation:fade-in 0.4s ease; }
     @keyframes fade-in { from{opacity:0} to{opacity:1} }
-    .scanner { position:relative; width:180px; height:180px; }
-    .scanner-ring { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(56,189,248,0.15); }
-    .scanner-ring.r1 { border-top-color:var(--accent); animation:spin 1s linear infinite; }
-    .scanner-ring.r2 { inset:16px; border-top-color:transparent; border-right-color:rgba(56,189,248,0.5); animation:spin 1.5s linear infinite reverse; }
-    .scanner-ring.r3 { inset:32px; border-top-color:rgba(56,189,248,0.7); animation:spin 2s linear infinite; }
+
+    /* Holographic scanner */
+    .scanner { position:relative; width:200px; height:200px; }
+    .s-ring {
+        position:absolute; inset:0; border-radius:50%;
+        border:1.5px solid transparent;
+    }
+    .s-ring.r1 { border-top-color:var(--accent); animation:spin 1.2s linear infinite; }
+    .s-ring.r2 { inset:18px; border-right-color:rgba(0,255,179,0.6); animation:spin 2s linear infinite reverse; }
+    .s-ring.r3 { inset:36px; border-top-color:rgba(0,210,255,0.4); border-bottom-color:rgba(0,210,255,0.4); animation:spin 3s linear infinite; }
+    .s-ring.r4 { inset:54px; border-left-color:rgba(255,201,60,0.3); animation:spin 1.8s linear infinite reverse; }
     @keyframes spin { to{transform:rotate(360deg)} }
-    .scanner-core { position:absolute; inset:48px; background:rgba(56,189,248,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; animation:pulse-core 2s ease-in-out infinite; }
-    @keyframes pulse-core { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(1.1);opacity:1} }
-    .loading-title { font-size:20px; font-weight:600; color:var(--text); }
-    .loading-steps { display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
-    .step { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); opacity:.4; transition:all 0.4s; }
+    .s-core {
+        position:absolute; inset:64px;
+        background:radial-gradient(circle,rgba(0,210,255,0.15),rgba(0,210,255,0.05));
+        border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px;
+        animation:core-pulse 2s ease-in-out infinite;
+    }
+    @keyframes core-pulse { 0%,100%{transform:scale(1);opacity:0.8} 50%{transform:scale(1.08);opacity:1} }
+
+    /* Scan beam */
+    .s-beam {
+        position:absolute; inset:0; border-radius:50%; overflow:hidden;
+    }
+    .s-beam::after {
+        content:''; position:absolute; top:50%; left:50%;
+        width:50%; height:1px;
+        background:linear-gradient(90deg,rgba(0,210,255,0.8),transparent);
+        transform-origin:0 0;
+        animation:beam 1.2s linear infinite;
+    }
+    @keyframes beam { to{transform:rotate(360deg)} }
+
+    .loading-title { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text); }
+    .loading-steps { display:flex; flex-direction:column; gap:12px; }
+    .step { display:flex; align-items:center; gap:12px; font-size:13px; font-family:var(--font-d); letter-spacing:0.04em; color:var(--muted); opacity:0.35; transition:all 0.4s; }
     .step.active { color:var(--accent); opacity:1; }
-    .step.done { color:var(--success); opacity:.8; }
-    .step-dot { width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0; }
-    .step.active .step-dot { animation:blink 1s ease infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .progress-track { width:280px; height:3px; background:var(--surface2); border-radius:3px; overflow:hidden; }
-    .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; width:0%; transition:width 0.6s ease; }
+    .step.done { color:var(--success); opacity:0.75; }
+    .step-indicator { width:28px; height:28px; border-radius:50%; border:1px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; transition:all 0.3s; }
+    .step.active .step-indicator { background:rgba(0,210,255,0.1); animation:blink 1s ease infinite; }
+    .step.done .step-indicator { background:rgba(0,255,179,0.1); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .step-num { font-weight:700; }
+
+    .progress-wrap { width:320px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .progress-track { width:100%; height:4px; background:var(--surface3); border-radius:4px; overflow:hidden; }
+    .progress-fill { height:100%; border-radius:4px; width:0%; transition:width 0.7s cubic-bezier(0.4,0,0.2,1); background:linear-gradient(90deg,var(--accent),var(--accent3)); box-shadow:0 0 8px rgba(0,210,255,0.5); }
 </style>
 
-<!-- Loading overlay — text filled by JS so it's always in the right language -->
+<!-- Loading overlay -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="scanner">
-        <div class="scanner-ring r1"></div>
-        <div class="scanner-ring r2"></div>
-        <div class="scanner-ring r3"></div>
-        <div class="scanner-core">🔍</div>
+        <div class="s-ring r1"></div>
+        <div class="s-ring r2"></div>
+        <div class="s-ring r3"></div>
+        <div class="s-ring r4"></div>
+        <div class="s-beam"></div>
+        <div class="s-core">🔍</div>
     </div>
     <div class="loading-title" id="overlayTitle">Анализ изображения</div>
     <div class="loading-steps">
-        <div class="step" id="step1"><div class="step-dot"></div><span id="stepText1">Загрузка изображения...</span></div>
-        <div class="step" id="step2"><div class="step-dot"></div><span id="stepText2">Распознавание объектов...</span></div>
-        <div class="step" id="step3"><div class="step-dot"></div><span id="stepText3">AI-диагностика...</span></div>
-        <div class="step" id="step4"><div class="step-dot"></div><span id="stepText4">Формирование отчёта...</span></div>
+        <div class="step" id="step1"><div class="step-indicator"><span class="step-num">01</span></div><span id="stepText1">Загрузка изображения...</span></div>
+        <div class="step" id="step2"><div class="step-indicator"><span class="step-num">02</span></div><span id="stepText2">Распознавание объектов...</span></div>
+        <div class="step" id="step3"><div class="step-indicator"><span class="step-num">03</span></div><span id="stepText3">AI-диагностика...</span></div>
+        <div class="step" id="step4"><div class="step-indicator"><span class="step-num">04</span></div><span id="stepText4">Формирование отчёта...</span></div>
     </div>
-    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-wrap">
+        <div class="progress-label"><span>Обработка</span><span id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
 </div>
 
 <div class="card">
@@ -58,15 +131,14 @@
 
     <form method="post" enctype="multipart/form-data" id="uploadForm">
         {% csrf_token %}
-        <!-- Language is sent with the form so the AI responds in the right language -->
         <input type="hidden" name="language" id="langInput" value="ru">
 
         {% for field in form %}
             {% if field.widget_type == 'file' or 'image' in field.html_name %}
-                <div class="upload-area" id="uploadArea">
-                    <span class="upload-icon">📷</span>
-                    <p data-i18n="upload_drag">Перетащите фото или нажмите для выбора</p>
-                    <p style="font-size:12px;" data-i18n="upload_formats">JPG, PNG, WEBP до 10 МБ</p>
+                <div class="upload-zone" id="uploadArea">
+                    <div class="upload-icon-wrap">📷</div>
+                    <div class="upload-title" data-i18n="upload_drag">Перетащите фото или нажмите для выбора</div>
+                    <div class="upload-sub upload-formats" data-i18n="upload_formats">JPG, PNG, WEBP до 10 МБ</div>
                     {{ field }}
                 </div>
                 <div class="preview-box" id="previewBox">
@@ -74,14 +146,14 @@
                     <span class="preview-label" data-i18n="upload_preview">Предпросмотр</span>
                 </div>
             {% else %}
-                <div class="form-row">
+                <div style="margin-bottom:18px;">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
                 </div>
             {% endif %}
         {% endfor %}
 
-        <button type="submit" class="btn btn-primary" id="submitBtn">
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="margin-top:8px;">
             🔍 <span data-i18n="upload_submit">Анализировать</span>
         </button>
     </form>
@@ -89,69 +161,62 @@
 
 <script>
 (function() {
-    var fileInput = document.querySelector('input[type="file"]');
+    var fileInput  = document.querySelector('input[type="file"]');
     var previewBox = document.getElementById('previewBox');
     var previewImg = document.getElementById('previewImg');
     var uploadArea = document.getElementById('uploadArea');
     var uploadForm = document.getElementById('uploadForm');
     var loadingOverlay = document.getElementById('loadingOverlay');
-    var progressFill = document.getElementById('progressFill');
+    var progressFill   = document.getElementById('progressFill');
+    var progressPct    = document.getElementById('progressPct');
     var langInput = document.getElementById('langInput');
 
-    // Sync hidden language field from cookie
     langInput.value = getCookie('lang') || 'ru';
 
-    // Image preview
     fileInput.addEventListener('change', function() {
         var file = fileInput.files[0];
         if (!file) return;
         var reader = new FileReader();
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            previewBox.style.display = 'block';
-        };
+        reader.onload = function(e) { previewImg.src = e.target.result; previewBox.style.display = 'block'; };
         reader.readAsDataURL(file);
     });
 
-    // Drag & drop
-    uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('drag-over'); });
-    uploadArea.addEventListener('dragleave', function() { uploadArea.classList.remove('drag-over'); });
+    uploadArea.addEventListener('dragover',  function(e) { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+    uploadArea.addEventListener('dragleave', function()  { uploadArea.classList.remove('drag-over'); });
     uploadArea.addEventListener('drop', function(e) {
         e.preventDefault(); uploadArea.classList.remove('drag-over');
         var file = e.dataTransfer.files[0];
         if (file) { var dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); }
     });
 
-    // On submit: show loading overlay with correct language text
     uploadForm.addEventListener('submit', function() {
         var lang = getCookie('lang') || 'ru';
         langInput.value = lang;
         var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
 
-        // Set overlay text from translation dictionary
-        document.getElementById('overlayTitle').textContent = t.upload_analyzing || 'Анализ изображения';
-        document.getElementById('stepText1').textContent = t.upload_step1 || 'Загрузка изображения...';
-        document.getElementById('stepText2').textContent = t.upload_step2 || 'Распознавание объектов...';
+        document.getElementById('overlayTitle').textContent  = t.upload_analyzing || 'Анализ изображения';
+        document.getElementById('stepText1').textContent = t.upload_step1 || 'Загрузка...';
+        document.getElementById('stepText2').textContent = t.upload_step2 || 'Распознавание...';
         document.getElementById('stepText3').textContent = t.upload_step3 || 'AI-диагностика...';
-        document.getElementById('stepText4').textContent = t.upload_step4 || 'Формирование отчёта...';
+        document.getElementById('stepText4').textContent = t.upload_step4 || 'Отчёт...';
 
         loadingOverlay.classList.add('active');
 
         var steps = [
-            { el: document.getElementById('step1'), delay: 0,    progress: 15 },
-            { el: document.getElementById('step2'), delay: 1200, progress: 40 },
-            { el: document.getElementById('step3'), delay: 3000, progress: 70 },
-            { el: document.getElementById('step4'), delay: 5500, progress: 90 },
+            { el: document.getElementById('step1'), delay: 0,    progress: 20 },
+            { el: document.getElementById('step2'), delay: 1200, progress: 45 },
+            { el: document.getElementById('step3'), delay: 3200, progress: 72 },
+            { el: document.getElementById('step4'), delay: 5800, progress: 92 },
         ];
 
-        // Reset all steps first
         steps.forEach(function(s) { s.el.className = 'step'; });
 
         steps.forEach(function(s, i) {
             setTimeout(function() {
-                if (i > 0) { steps[i-1].el.className = 'step done'; }
+                if (i > 0) steps[i-1].el.className = 'step done';
                 s.el.className = 'step active';
                 progressFill.style.width = s.progress + '%';
+                if (progressPct) progressPct.textContent = s.progress + '%';
             }, s.delay);
         });
     });

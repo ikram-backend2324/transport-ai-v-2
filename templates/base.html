@@ -4,240 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Transport</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg: #0b1120; --surface: #111827; --surface2: #1a2540;
-            --border: rgba(255,255,255,0.08); --border-hover: rgba(56,189,248,0.4);
-            --accent: #38bdf8; --accent2: #0ea5e9; --text: #f1f5f9; --muted: #94a3b8;
-            --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
-            --radius: 14px; --radius-sm: 8px;
+            --bg: #070a12; --surface: #0d1220; --surface2: #121929; --surface3: #1a2438;
+            --border: rgba(255,255,255,0.06); --border-glow: rgba(0,210,255,0.35);
+            --accent: #00d2ff; --accent2: #0099cc; --accent3: #00ffb3;
+            --text: #e8f0f8; --muted: #6b7d94; --muted2: #3d4f66;
+            --success: #00ffb3; --warning: #ffc93c; --danger: #ff4d6d;
+            --radius: 16px; --radius-sm: 10px;
+            --font-d: 'Rajdhani', sans-serif; --font-b: 'DM Sans', sans-serif;
         }
-        body { background:var(--bg); color:var(--text); font-family:'Inter','Segoe UI',sans-serif; font-size:15px; line-height:1.6; min-height:100vh; }
-        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
-        body::after { content:''; position:fixed; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(56,189,248,0.06) 0%,transparent 70%); top:-200px; right:-200px; pointer-events:none; z-index:0; animation:orb-drift 20s ease-in-out infinite alternate; }
-        @keyframes orb-drift { from{transform:translate(0,0)} to{transform:translate(-60px,80px)} }
-        .modern-btn { background:linear-gradient(135deg,#4f46e5,#9333ea); color:white; border:none; padding:14px 28px; font-size:16px; font-weight:600; border-radius:12px; cursor:pointer; transition:all 0.3s ease; box-shadow:0 8px 20px rgba(0,0,0,0.2); position:relative; overflow:hidden; }
-        .modern-btn:hover { transform:translateY(-3px) scale(1.03); box-shadow:0 12px 25px rgba(0,0,0,0.3); }
-        .modern-btn:active { transform:scale(0.97); }
-        .modern-btn::before { content:""; position:absolute; top:0; left:-75%; width:50%; height:100%; background:linear-gradient(120deg,transparent,rgba(255,255,255,0.4),transparent); transition:0.5s; }
-        .modern-btn:hover::before { left:125%; }
-        .navbar { position:sticky; top:0; z-index:100; background:rgba(11,17,32,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:0 32px; height:60px; display:flex; align-items:center; justify-content:space-between; }
-        .navbar-brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text); }
-        .brand-icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
-        .brand-name { font-size:16px; font-weight:600; color:var(--text); }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-b); font-size: 15px; line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
+        .bg-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .bg-grid { background-image: linear-gradient(rgba(0,210,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.025) 1px,transparent 1px); background-size: 48px 48px; }
+        .bg-g1 { background: radial-gradient(ellipse 700px 500px at 90% -10%,rgba(0,153,204,0.12) 0%,transparent 70%); animation: gd1 18s ease-in-out infinite alternate; }
+        .bg-g2 { background: radial-gradient(ellipse 500px 400px at -10% 80%,rgba(0,255,179,0.06) 0%,transparent 60%); animation: gd2 24s ease-in-out infinite alternate; }
+        .bg-scan { background: linear-gradient(transparent 0%,rgba(0,210,255,0.012) 50%,transparent 100%); background-size: 100% 200px; animation: scan 10s linear infinite; }
+        @keyframes gd1 { from{transform:translate(0,0)} to{transform:translate(-80px,60px)} }
+        @keyframes gd2 { from{transform:translate(0,0)} to{transform:translate(60px,-40px)} }
+        @keyframes scan { from{background-position:0 -200px} to{background-position:0 110vh} }
+        .navbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(7,10,18,0.88); backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border); padding: 0 36px;
+            height: 64px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .navbar::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,210,255,0.25),transparent); }
+        .navbar-brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--text); }
+        .brand-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 0 20px rgba(0,210,255,0.3); }
+        .brand-name { font-family:var(--font-d); font-size:20px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; }
         .brand-name span { color:var(--accent); }
         .nav-links { display:flex; align-items:center; gap:4px; }
-        .nav-links a { text-decoration:none; color:var(--muted); padding:7px 14px; border-radius:var(--radius-sm); font-size:14px; font-weight:500; transition:all 0.2s; border:1px solid transparent; }
+        .nav-links a { text-decoration:none; color:var(--muted); padding:8px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; transition:all 0.2s; border:1px solid transparent; }
         .nav-links a:hover { color:var(--text); background:var(--surface2); border-color:var(--border); }
-        .nav-links a.btn-nav { color:var(--accent); border-color:rgba(56,189,248,0.3); }
-        .nav-links a.btn-nav:hover { background:rgba(56,189,248,0.1); border-color:var(--accent); }
-        .lang-switcher { display:flex; align-items:center; gap:3px; background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:3px; margin-left:8px; }
-        .lang-btn { background:none; border:none; color:var(--muted); font-size:12px; font-weight:600; padding:4px 9px; border-radius:14px; cursor:pointer; transition:all 0.2s; letter-spacing:0.03em; font-family:inherit; }
+        .nav-links a.btn-nav { color:var(--accent); border-color:rgba(0,210,255,0.3); background:rgba(0,210,255,0.05); font-family:var(--font-d); font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:12px; }
+        .nav-links a.btn-nav:hover { background:rgba(0,210,255,0.12); border-color:var(--accent); box-shadow:0 0 16px rgba(0,210,255,0.2); }
+        .lang-switcher { display:flex; align-items:center; gap:2px; background:var(--surface2); border:1px solid var(--border); border-radius:24px; padding:3px; margin-left:8px; }
+        .lang-btn { background:none; border:none; color:var(--muted); font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; cursor:pointer; transition:all 0.2s; letter-spacing:0.06em; font-family:var(--font-d); }
         .lang-btn:hover { color:var(--text); }
-        .lang-btn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0b1120; }
-        .container { position:relative; z-index:1; max-width:860px; margin:48px auto; padding:0 24px; animation:page-in 0.5s ease both; }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; margin-bottom:20px; animation:card-in 0.4s ease both; }
-        @keyframes card-in { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes page-in { from{opacity:0} to{opacity:1} }
-        h2 { font-size:20px; font-weight:600; color:var(--text); margin-bottom:22px; }
+        .lang-btn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--bg); }
+        .container { position:relative; z-index:1; max-width:920px; margin:48px auto; padding:0 28px; animation:page-in 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes page-in { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; margin-bottom:20px; position:relative; overflow:hidden; animation:card-in 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent); }
+        .card:nth-child(2){animation-delay:0.08s} .card:nth-child(3){animation-delay:0.16s}
+        @keyframes card-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        h2 { font-family:var(--font-d); font-size:22px; font-weight:700; color:var(--text); margin-bottom:24px; letter-spacing:0.03em; text-transform:uppercase; }
         h2 .accent { color:var(--accent); }
-        .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:var(--radius-sm); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; text-decoration:none; border:none; }
-        .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0b1120; }
-        .btn-primary:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 20px rgba(56,189,248,0.3); }
+        .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s; text-decoration:none; border:none; font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; position:relative; overflow:hidden; }
+        .btn::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(120deg,transparent,rgba(255,255,255,0.15),transparent); transition:left 0.4s; }
+        .btn:hover::before { left:140%; }
+        .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--bg); box-shadow:0 4px 20px rgba(0,210,255,0.25); }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,210,255,0.4); }
         .btn-primary:active { transform:translateY(0); }
-        .btn-outline { background:transparent; color:var(--accent); border:1px solid rgba(56,189,248,0.35); }
-        .btn-outline:hover { background:rgba(56,189,248,0.08); border-color:var(--accent); }
-        input[type="text"],input[type="password"],input[type="email"],select { width:100%; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:14px; outline:none; transition:border-color 0.2s; margin-bottom:14px; }
-        input:focus,select:focus { border-color:var(--accent); }
-        label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500; }
+        .btn-outline { background:transparent; color:var(--accent); border:1px solid rgba(0,210,255,0.35); }
+        .btn-outline:hover { background:rgba(0,210,255,0.08); border-color:var(--accent); }
+        input[type="text"],input[type="password"],input[type="email"],select { width:100%; padding:11px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:14px; font-family:var(--font-b); outline:none; transition:all 0.2s; margin-bottom:14px; }
+        input:focus,select:focus { border-color:var(--accent); background:rgba(0,210,255,0.04); box-shadow:0 0 0 3px rgba(0,210,255,0.08); }
+        label { display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; font-family:var(--font-d); }
         ul { list-style:none; }
-        li { background:var(--bg); border:1px solid var(--border); padding:16px 18px; margin-bottom:10px; border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center; transition:border-color 0.2s; animation:card-in 0.3s ease both; }
-        li:hover { border-color:var(--border-hover); }
+        li { background:var(--surface2); border:1px solid var(--border); padding:16px 18px; margin-bottom:10px; border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center; transition:all 0.2s; animation:card-in 0.4s ease both; }
+        li:hover { border-color:var(--border-glow); transform:translateX(4px); }
         a.link { color:var(--accent); text-decoration:none; font-size:13px; font-weight:500; }
         a.link:hover { text-decoration:underline; }
         img { border-radius:var(--radius-sm); }
-        .badge { display:inline-flex; align-items:center; background:rgba(34,197,94,0.15); color:#22c55e; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:500; border:1px solid rgba(34,197,94,0.25); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .badge { display:inline-flex; align-items:center; background:rgba(0,255,179,0.1); color:var(--success); padding:3px 12px; border-radius:20px; font-size:12px; font-weight:500; border:1px solid rgba(0,255,179,0.2); }
+        ::-webkit-scrollbar{width:6px;background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
     </style>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         i18n script MUST be in <head> so child templates can use
-         getCookie / TRANSLATIONS / applyLang in their own <script> tags
-         ═══════════════════════════════════════════════════════════════ -->
     <script>
-    // ── Cookie helpers ─────────────────────────────────────────────────────────
-    function getCookie(name) {
-        var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-        return m ? decodeURIComponent(m[1]) : null;
-    }
-    function setCookie(name, value, days) {
-        var expires = new Date(Date.now() + days * 864e5).toUTCString();
-        document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
-    }
-
-    // ── Full translation dictionary ────────────────────────────────────────────
-    var TRANSLATIONS = {
-        uz: {
-            // Navbar
-            nav_home:'Bosh sahifa', nav_check:'+ Tekshirish', nav_logout:'Chiqish',
-            // Index
-            index_title:'Tekshirishlar', index_new:'+ Yangi tekshiruv',
-            index_empty_title:"Hali tekshirishlar yo'q",
-            index_empty_sub:'Tahlil qilish uchun avtomobil rasmini yuklang',
-            index_start:'Tekshirishni boshlash',
-            // Upload
-            upload_card_title:'Rasmni yuklash',
-            upload_analyzing:'Tasvir tahlil qilinmoqda',
-            upload_step1:'Rasm yuklanmoqda...',
-            upload_step2:'Obyektlar aniqlanmoqda...',
-            upload_step3:'AI diagnostika...',
-            upload_step4:'Hisobot tayyorlanmoqda...',
-            upload_drag:"Rasmni shu yerga torting yoki tanlash uchun bosing",
-            upload_formats:'JPG, PNG, WEBP — 10 MBgacha',
-            upload_preview:"Ko'rinish",
-            upload_submit:'Tahlil qilish',
-            // Form labels
-            label_vehicle:'Transport vositasi', label_image:'Fotosurat',
-            label_username:'Foydalanuvchi nomi', label_password:'Parol',
-            label_password1:'Parol', label_password2:'Parolni tasdiqlang',
-            // Result
-            result_heading:'Tahlil', result_heading2:'natijasi',
-            result_back:'← Orqaga', result_ai_conf:'AI ishonchliligi',
-            result_ai_title:'AI-Diagnostika', result_ai_sub:'Claude Vision',
-            result_conf_label:'Model ishonchliligi',
-            result_done:'Tahlil yakunlandi', result_new:'Yangi tekshiruv',
-            result_conf_low:'% — past', result_conf_mid:"% — o'rta", result_conf_high:'% — yuqori',
-            // Login
-            login_title:'Kirish', login_btn:'Kirish',
-            login_no_account:"Akkount yo'qmi?", login_register:"Ro'yxatdan o'tish",
-            // Register
-            reg_title:"Ro'yxatdan o'tish", reg_btn:'Hisob yaratish',
-            reg_have_account:'Allaqachon hisobingiz bormi?', reg_login:'Kirish',
-        },
-        ru: {
-            nav_home:'Главная', nav_check:'+ Проверка', nav_logout:'Выйти',
-            index_title:'Проверки', index_new:'+ Новая проверка',
-            index_empty_title:'Проверок пока нет',
-            index_empty_sub:'Загрузите фото автомобиля для анализа',
-            index_start:'Начать проверку',
-            upload_card_title:'Загрузка изображения',
-            upload_analyzing:'Анализ изображения',
-            upload_step1:'Загрузка изображения...',
-            upload_step2:'Распознавание объектов...',
-            upload_step3:'AI-диагностика...',
-            upload_step4:'Формирование отчёта...',
-            upload_drag:'Перетащите фото или нажмите для выбора',
-            upload_formats:'JPG, PNG, WEBP до 10 МБ',
-            upload_preview:'Предпросмотр',
-            upload_submit:'Анализировать',
-            label_vehicle:'Транспортное средство', label_image:'Фотография',
-            label_username:'Имя пользователя', label_password:'Пароль',
-            label_password1:'Пароль', label_password2:'Подтвердите пароль',
-            result_heading:'Результат', result_heading2:'анализа',
-            result_back:'← Назад', result_ai_conf:'уверенность AI',
-            result_ai_title:'AI-диагностика', result_ai_sub:'Claude Vision',
-            result_conf_label:'Уверенность модели',
-            result_done:'Анализ завершён', result_new:'Новая проверка',
-            result_conf_low:'% — низкая', result_conf_mid:'% — средняя', result_conf_high:'% — высокая',
-            login_title:'Вход', login_btn:'Войти',
-            login_no_account:'Нет аккаунта?', login_register:'Регистрация',
-            reg_title:'Регистрация', reg_btn:'Создать аккаунт',
-            reg_have_account:'Уже есть аккаунт?', reg_login:'Войти',
-        },
-        en: {
-            nav_home:'Home', nav_check:'+ New Check', nav_logout:'Log Out',
-            index_title:'Inspections', index_new:'+ New Inspection',
-            index_empty_title:'No inspections yet',
-            index_empty_sub:'Upload a vehicle photo to start analysis',
-            index_start:'Start Inspection',
-            upload_card_title:'Upload Image',
-            upload_analyzing:'Analysing Image',
-            upload_step1:'Uploading image...',
-            upload_step2:'Detecting objects...',
-            upload_step3:'AI diagnostics...',
-            upload_step4:'Generating report...',
-            upload_drag:'Drag & drop a photo or click to browse',
-            upload_formats:'JPG, PNG, WEBP up to 10 MB',
-            upload_preview:'Preview',
-            upload_submit:'Analyse',
-            label_vehicle:'Vehicle', label_image:'Photo',
-            label_username:'Username', label_password:'Password',
-            label_password1:'Password', label_password2:'Confirm Password',
-            result_heading:'Analysis', result_heading2:'Result',
-            result_back:'← Back', result_ai_conf:'AI confidence',
-            result_ai_title:'AI Diagnostics', result_ai_sub:'Claude Vision',
-            result_conf_label:'Model confidence',
-            result_done:'Analysis complete', result_new:'New Inspection',
-            result_conf_low:'% — low', result_conf_mid:'% — medium', result_conf_high:'% — high',
-            login_title:'Sign In', login_btn:'Sign In',
-            login_no_account:'No account yet?', login_register:'Register',
-            reg_title:'Register', reg_btn:'Create Account',
-            reg_have_account:'Already have an account?', reg_login:'Sign In',
-        },
-    };
-
-    // ── Apply translations to DOM ──────────────────────────────────────────────
-    function applyLang(lang) {
-        var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
-
-        // Translate [data-i18n] elements — safely, only text content
-        document.querySelectorAll('[data-i18n]').forEach(function(el) {
-            var key = el.getAttribute('data-i18n');
-            if (t[key] === undefined) return;
-            // If element has no child elements, set textContent directly
-            if (el.children.length === 0) {
-                el.textContent = t[key];
-            } else {
-                // Element has child elements (e.g. <h2> with <span>) — update only direct text nodes
-                Array.from(el.childNodes).forEach(function(node) {
-                    if (node.nodeType === 3 /* TEXT_NODE */ && node.textContent.trim()) {
-                        node.textContent = ' ' + t[key] + ' ';
-                    }
-                });
-            }
-        });
-
-        // Translate form field labels by their for= attribute
-        var labelMap = {
-            'id_username': 'label_username',
-            'id_password': 'label_password',
-            'id_password1': 'label_password1',
-            'id_password2': 'label_password2',
-            'id_vehicle': 'label_vehicle',
-            'id_image': 'label_image',
-        };
-        document.querySelectorAll('label[for]').forEach(function(label) {
-            var key = labelMap[label.getAttribute('for')];
-            if (key && t[key]) label.textContent = t[key];
-        });
-
-        // Update active lang button
-        document.querySelectorAll('.lang-btn').forEach(function(btn) {
-            btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-        });
-
-        document.documentElement.lang = lang;
-
-        // Sync hidden language inputs
-        document.querySelectorAll('input[name="language"]').forEach(function(inp) {
-            inp.value = lang;
-        });
-    }
-
-    function setLang(lang) {
-        setCookie('lang', lang, 365);
-        applyLang(lang);
-    }
-
-    // Apply immediately when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        applyLang(getCookie('lang') || 'ru');
-    });
+    function getCookie(name){var m=document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));return m?decodeURIComponent(m[1]):null;}
+    function setCookie(name,value,days){var e=new Date(Date.now()+days*864e5).toUTCString();document.cookie=name+'='+encodeURIComponent(value)+'; expires='+e+'; path=/';}
+    var TRANSLATIONS={uz:{nav_home:'Bosh sahifa',nav_check:'+ Tekshirish',nav_logout:'Chiqish',index_title:'Tekshirishlar',index_new:'+ Yangi tekshiruv',index_empty_title:"Hali tekshirishlar yo'q",index_empty_sub:'Tahlil qilish uchun avtomobil rasmini yuklang',index_start:'Tekshirishni boshlash',upload_card_title:'Rasmni yuklash',upload_analyzing:'Tasvir tahlil qilinmoqda',upload_step1:'Rasm yuklanmoqda...',upload_step2:'Obyektlar aniqlanmoqda...',upload_step3:'AI diagnostika...',upload_step4:'Hisobot tayyorlanmoqda...',upload_drag:"Rasmni shu yerga torting yoki tanlash uchun bosing",upload_formats:'JPG, PNG, WEBP — 10 MBgacha',upload_preview:"Ko'rinish",upload_submit:'Tahlil qilish',label_vehicle:'Transport vositasi',label_image:'Fotosurat',label_username:'Foydalanuvchi nomi',label_password:'Parol',label_password1:'Parol',label_password2:'Parolni tasdiqlang',result_heading:'Tahlil',result_heading2:'natijasi',result_back:'← Orqaga',result_ai_conf:'AI ishonchliligi',result_ai_title:'AI-Diagnostika',result_ai_sub:'Claude Vision',result_conf_label:'Model ishonchliligi',result_done:'Tahlil yakunlandi',result_new:'Yangi tekshiruv',result_conf_low:'% — past',result_conf_mid:"% — o'rta",result_conf_high:'% — yuqori',login_title:'Kirish',login_btn:'Kirish',login_no_account:"Akkount yo'qmi?",login_register:"Ro'yxatdan o'tish",reg_title:"Ro'yxatdan o'tish",reg_btn:'Hisob yaratish',reg_have_account:'Allaqachon hisobingiz bormi?',reg_login:'Kirish'},ru:{nav_home:'Главная',nav_check:'+ Проверка',nav_logout:'Выйти',index_title:'Проверки',index_new:'+ Новая проверка',index_empty_title:'Проверок пока нет',index_empty_sub:'Загрузите фото автомобиля для анализа',index_start:'Начать проверку',upload_card_title:'Загрузка изображения',upload_analyzing:'Анализ изображения',upload_step1:'Загрузка изображения...',upload_step2:'Распознавание объектов...',upload_step3:'AI-диагностика...',upload_step4:'Формирование отчёта...',upload_drag:'Перетащите фото или нажмите для выбора',upload_formats:'JPG, PNG, WEBP до 10 МБ',upload_preview:'Предпросмотр',upload_submit:'Анализировать',label_vehicle:'Транспортное средство',label_image:'Фотография',label_username:'Имя пользователя',label_password:'Пароль',label_password1:'Пароль',label_password2:'Подтвердите пароль',result_heading:'Результат',result_heading2:'анализа',result_back:'← Назад',result_ai_conf:'уверенность AI',result_ai_title:'AI-диагностика',result_ai_sub:'Claude Vision',result_conf_label:'Уверенность модели',result_done:'Анализ завершён',result_new:'Новая проверка',result_conf_low:'% — низкая',result_conf_mid:'% — средняя',result_conf_high:'% — высокая',login_title:'Вход',login_btn:'Войти',login_no_account:'Нет аккаунта?',login_register:'Регистрация',reg_title:'Регистрация',reg_btn:'Создать аккаунт',reg_have_account:'Уже есть аккаунт?',reg_login:'Войти'},en:{nav_home:'Home',nav_check:'+ New Check',nav_logout:'Log Out',index_title:'Inspections',index_new:'+ New Inspection',index_empty_title:'No inspections yet',index_empty_sub:'Upload a vehicle photo to start analysis',index_start:'Start Inspection',upload_card_title:'Upload Image',upload_analyzing:'Analysing Image',upload_step1:'Uploading image...',upload_step2:'Detecting objects...',upload_step3:'AI diagnostics...',upload_step4:'Generating report...',upload_drag:'Drag & drop a photo or click to browse',upload_formats:'JPG, PNG, WEBP up to 10 MB',upload_preview:'Preview',upload_submit:'Analyse',label_vehicle:'Vehicle',label_image:'Photo',label_username:'Username',label_password:'Password',label_password1:'Password',label_password2:'Confirm Password',result_heading:'Analysis',result_heading2:'Result',result_back:'← Back',result_ai_conf:'AI confidence',result_ai_title:'AI Diagnostics',result_ai_sub:'Claude Vision',result_conf_label:'Model confidence',result_done:'Analysis complete',result_new:'New Inspection',result_conf_low:'% — low',result_conf_mid:'% — medium',result_conf_high:'% — high',login_title:'Sign In',login_btn:'Sign In',login_no_account:'No account yet?',login_register:'Register',reg_title:'Register',reg_btn:'Create Account',reg_have_account:'Already have an account?',reg_login:'Sign In'}};
+    function applyLang(lang){var t=TRANSLATIONS[lang]||TRANSLATIONS['ru'];document.querySelectorAll('[data-i18n]').forEach(function(el){var key=el.getAttribute('data-i18n');if(t[key]===undefined)return;if(el.children.length===0){el.textContent=t[key];}else{Array.from(el.childNodes).forEach(function(node){if(node.nodeType===3&&node.textContent.trim()){node.textContent=' '+t[key]+' ';}});}});var lm={'id_username':'label_username','id_password':'label_password','id_password1':'label_password1','id_password2':'label_password2','id_vehicle':'label_vehicle','id_image':'label_image'};document.querySelectorAll('label[for]').forEach(function(lb){var k=lm[lb.getAttribute('for')];if(k&&t[k])lb.textContent=t[k];});document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);});document.documentElement.lang=lang;document.querySelectorAll('input[name="language"]').forEach(function(inp){inp.value=lang;});}
+    function setLang(lang){setCookie('lang',lang,365);applyLang(lang);}
+    document.addEventListener('DOMContentLoaded',function(){applyLang(getCookie('lang')||'ru');});
     </script>
 </head>
 <body>
-
+<div class="bg-layer bg-grid"></div>
+<div class="bg-layer bg-g1"></div>
+<div class="bg-layer bg-g2"></div>
+<div class="bg-layer bg-scan"></div>
 <nav class="navbar">
     <a href="/" class="navbar-brand">
         <div class="brand-icon">🚗</div>
@@ -254,10 +104,8 @@
         </div>
     </div>
 </nav>
-
 <div class="container">
     {% block content %}{% endblock %}
 </div>
-
 </body>
 </html>

@@ -1,28 +1,35 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="card" style="max-width:440px;margin:0 auto;">
-    <h2 data-i18n="login_title">Вход</h2>
-
-    <form method="post">
-        {% csrf_token %}
-        {% for field in form %}
-        <div style="margin-bottom:16px;">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}
-                {% for error in field.errors %}
-                    <div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ error }}</div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        {% endfor %}
-        <button class="modern-btn" type="submit" data-i18n="login_btn">Войти</button>
-    </form>
-
-    <p style="margin-top:16px;font-size:13px;color:var(--muted);">
-        <span data-i18n="login_no_account">Нет аккаунта?</span>
-        <a class="link" href="/users/register/" data-i18n="login_register">Регистрация</a>
-    </p>
+<style>
+    .auth-wrap { max-width:420px; margin:0 auto; }
+    .auth-brand { text-align:center; margin-bottom:32px; animation:card-in 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+    .auth-brand-icon { width:64px; height:64px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto 16px; box-shadow:0 0 32px rgba(0,210,255,0.25); }
+    .auth-title { font-family:var(--font-d); font-size:24px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px; }
+    .auth-sub { color:var(--muted); font-size:13px; }
+    .auth-footer { text-align:center; margin-top:20px; font-size:13px; color:var(--muted); }
+</style>
+<div class="auth-wrap">
+    <div class="auth-brand">
+        <div class="auth-brand-icon">🚗</div>
+        <div class="auth-title" data-i18n="login_title">Вход</div>
+        <div class="auth-sub">AI Transport — Claude Vision</div>
+    </div>
+    <div class="card" style="animation-delay:0.1s;">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div style="margin-bottom:18px;">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;" data-i18n="login_btn">Войти</button>
+        </form>
+    </div>
+    <div class="auth-footer">
+        <span data-i18n="login_no_account">Нет аккаунта?</span>&nbsp;
+        <a href="/users/register/" class="link" data-i18n="login_register">Регистрация</a>
+    </div>
 </div>
 {% endblock %}
