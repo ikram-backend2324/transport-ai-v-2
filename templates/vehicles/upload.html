@@ -11,6 +11,7 @@
     .preview-box img { width:100%; max-height:300px; object-fit:cover; display:block; border-radius:0; }
     .preview-label { position:absolute; top:10px; left:10px; background:rgba(11,17,32,0.8); color:var(--accent); font-size:12px; font-weight:500; padding:4px 10px; border-radius:20px; border:1px solid rgba(56,189,248,0.3); backdrop-filter:blur(8px); }
     .form-row { margin-bottom:18px; }
+    /* Loading overlay */
     .loading-overlay { display:none; position:fixed; inset:0; background:rgba(11,17,32,0.92); backdrop-filter:blur(12px); z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
     .loading-overlay.active { display:flex; animation:fade-in 0.3s ease; }
     @keyframes fade-in { from{opacity:0} to{opacity:1} }
@@ -34,7 +35,7 @@
     .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; width:0%; transition:width 0.6s ease; }
 </style>
 
-<!-- Loading overlay -->
+<!-- Loading overlay — text filled by JS so it's always in the right language -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="scanner">
         <div class="scanner-ring r1"></div>
@@ -42,12 +43,12 @@
         <div class="scanner-ring r3"></div>
         <div class="scanner-core">🔍</div>
     </div>
-    <div class="loading-title" data-i18n="upload_analyzing">Анализ изображения</div>
+    <div class="loading-title" id="overlayTitle">Анализ изображения</div>
     <div class="loading-steps">
-        <div class="step active" id="step1"><div class="step-dot"></div><span data-i18n="upload_step1">Загрузка изображения...</span></div>
-        <div class="step" id="step2"><div class="step-dot"></div><span data-i18n="upload_step2">Распознавание объектов...</span></div>
-        <div class="step" id="step3"><div class="step-dot"></div><span data-i18n="upload_step3">AI-диагностика...</span></div>
-        <div class="step" id="step4"><div class="step-dot"></div><span data-i18n="upload_step4">Формирование отчёта...</span></div>
+        <div class="step" id="step1"><div class="step-dot"></div><span id="stepText1">Загрузка изображения...</span></div>
+        <div class="step" id="step2"><div class="step-dot"></div><span id="stepText2">Распознавание объектов...</span></div>
+        <div class="step" id="step3"><div class="step-dot"></div><span id="stepText3">AI-диагностика...</span></div>
+        <div class="step" id="step4"><div class="step-dot"></div><span id="stepText4">Формирование отчёта...</span></div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
 </div>
@@ -57,6 +58,7 @@
 
     <form method="post" enctype="multipart/form-data" id="uploadForm">
         {% csrf_token %}
+        <!-- Language is sent with the form so the AI responds in the right language -->
         <input type="hidden" name="language" id="langInput" value="ru">
 
         {% for field in form %}
@@ -86,49 +88,73 @@
 </div>
 
 <script>
-const fileInput = document.querySelector('input[type="file"]');
-const previewBox = document.getElementById('previewBox');
-const previewImg = document.getElementById('previewImg');
-const uploadArea = document.getElementById('uploadArea');
-const uploadForm = document.getElementById('uploadForm');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const progressFill = document.getElementById('progressFill');
-const langInput = document.getElementById('langInput');
+(function() {
+    var fileInput = document.querySelector('input[type="file"]');
+    var previewBox = document.getElementById('previewBox');
+    var previewImg = document.getElementById('previewImg');
+    var uploadArea = document.getElementById('uploadArea');
+    var uploadForm = document.getElementById('uploadForm');
+    var loadingOverlay = document.getElementById('loadingOverlay');
+    var progressFill = document.getElementById('progressFill');
+    var langInput = document.getElementById('langInput');
 
-langInput.value = getCookie('lang') || 'ru';
-
-fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => { previewImg.src = e.target.result; previewBox.style.display = 'block'; };
-    reader.readAsDataURL(file);
-});
-
-uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
-uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
-uploadArea.addEventListener('drop', e => {
-    e.preventDefault(); uploadArea.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) { const dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); }
-});
-
-uploadForm.addEventListener('submit', () => {
+    // Sync hidden language field from cookie
     langInput.value = getCookie('lang') || 'ru';
-    loadingOverlay.classList.add('active');
-    const steps = [
-        {el:document.getElementById('step1'),delay:0,progress:15},
-        {el:document.getElementById('step2'),delay:1200,progress:40},
-        {el:document.getElementById('step3'),delay:3000,progress:70},
-        {el:document.getElementById('step4'),delay:5500,progress:90},
-    ];
-    steps.forEach((s,i) => {
-        setTimeout(() => {
-            if(i>0){steps[i-1].el.classList.remove('active');steps[i-1].el.classList.add('done');}
-            s.el.classList.add('active');
-            progressFill.style.width = s.progress+'%';
-        }, s.delay);
+
+    // Image preview
+    fileInput.addEventListener('change', function() {
+        var file = fileInput.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewBox.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
     });
-});
+
+    // Drag & drop
+    uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+    uploadArea.addEventListener('dragleave', function() { uploadArea.classList.remove('drag-over'); });
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault(); uploadArea.classList.remove('drag-over');
+        var file = e.dataTransfer.files[0];
+        if (file) { var dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); }
+    });
+
+    // On submit: show loading overlay with correct language text
+    uploadForm.addEventListener('submit', function() {
+        var lang = getCookie('lang') || 'ru';
+        langInput.value = lang;
+        var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
+
+        // Set overlay text from translation dictionary
+        document.getElementById('overlayTitle').textContent = t.upload_analyzing || 'Анализ изображения';
+        document.getElementById('stepText1').textContent = t.upload_step1 || 'Загрузка изображения...';
+        document.getElementById('stepText2').textContent = t.upload_step2 || 'Распознавание объектов...';
+        document.getElementById('stepText3').textContent = t.upload_step3 || 'AI-диагностика...';
+        document.getElementById('stepText4').textContent = t.upload_step4 || 'Формирование отчёта...';
+
+        loadingOverlay.classList.add('active');
+
+        var steps = [
+            { el: document.getElementById('step1'), delay: 0,    progress: 15 },
+            { el: document.getElementById('step2'), delay: 1200, progress: 40 },
+            { el: document.getElementById('step3'), delay: 3000, progress: 70 },
+            { el: document.getElementById('step4'), delay: 5500, progress: 90 },
+        ];
+
+        // Reset all steps first
+        steps.forEach(function(s) { s.el.className = 'step'; });
+
+        steps.forEach(function(s, i) {
+            setTimeout(function() {
+                if (i > 0) { steps[i-1].el.className = 'step done'; }
+                s.el.className = 'step active';
+                progressFill.style.width = s.progress + '%';
+            }, s.delay);
+        });
+    });
+})();
 </script>
 {% endblock %}

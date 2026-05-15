@@ -17,7 +17,7 @@
     .analysis-icon { width:36px; height:36px; background:rgba(56,189,248,0.12); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
     .analysis-text { color:var(--muted); font-size:14px; line-height:1.7; flex:1; }
     .conf-section { margin-top:auto; padding-top:18px; border-top:1px solid var(--border); }
-    .conf-label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:8px; }
+    .conf-label-row { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:8px; }
     .conf-track { background:var(--bg); border-radius:6px; height:8px; overflow:hidden; border:1px solid var(--border); }
     .conf-bar { height:100%; border-radius:6px; width:0%; transition:width 1.2s cubic-bezier(0.4,0,0.2,1); }
     .conf-bar.low{background:linear-gradient(90deg,#ef4444,#f97316)}
@@ -32,13 +32,13 @@
 
 <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
     <h2 style="margin:0;">
-        <span data-i18n="result_heading">Результат</span> <span class="accent" data-i18n="result_heading2">анализа</span>
+        <span data-i18n="result_heading">Результат</span>&nbsp;<span class="accent" data-i18n="result_heading2">анализа</span>
     </h2>
     <a href="/" class="btn btn-outline" data-i18n="result_back">← Назад</a>
 </div>
 
 <div class="result-grid">
-    <!-- Image -->
+    <!-- Image card -->
     <div class="img-card">
         <img src="{{ inspection.image.url }}" alt="">
         <div class="img-overlay">
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <!-- Analysis -->
+    <!-- Analysis card -->
     <div class="card analysis-card" style="margin-bottom:0;">
         <div class="analysis-header">
             <div class="analysis-icon">🤖</div>
@@ -56,10 +56,15 @@
                 <div style="font-size:12px;color:var(--muted);" data-i18n="result_ai_sub">Claude Vision</div>
             </div>
         </div>
+
+        <!-- AI result text rendered by JS below -->
         <div class="analysis-text" id="analysisText"></div>
+
+        <!-- Django puts the JSON value here; JS reads it -->
         {{ inspection.result|json_script:"resultData" }}
+
         <div class="conf-section">
-            <div class="conf-label">
+            <div class="conf-label-row">
                 <span data-i18n="result_conf_label">Уверенность модели</span>
                 <span id="confPercent">{{ inspection.confidence }}%</span>
             </div>
@@ -68,7 +73,7 @@
     </div>
 </div>
 
-<!-- Meta -->
+<!-- Meta row -->
 <div class="card" style="padding:18px 24px;">
     <div class="meta-row">
         <div class="meta-chip"><div class="dot"></div>{{ inspection.vehicle.name }}</div>
@@ -85,39 +90,52 @@
 </a>
 
 <script>
-const confidence = {{ inspection.confidence }};
-const confBar = document.getElementById('confBar');
-const confBadge = document.getElementById('confBadge');
-const lang = getCookie('lang') || 'ru';
-const t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
-
-setTimeout(() => {
-    confBar.style.width = confidence + '%';
-    if (confidence < 40) {
-        confBar.className = 'conf-bar low'; confBadge.className = 'conf-badge conf-low';
-        confBadge.textContent = confidence + (t.result_conf_low || '% — низкая');
-    } else if (confidence < 70) {
-        confBar.className = 'conf-bar mid'; confBadge.className = 'conf-badge conf-mid';
-        confBadge.textContent = confidence + (t.result_conf_mid || '% — средняя');
-    } else {
-        confBar.className = 'conf-bar high'; confBadge.className = 'conf-badge conf-high';
-        confBadge.textContent = confidence + (t.result_conf_high || '% — высокая');
-    }
-}, 300);
-
-// Render AI text (strip confidence line in any language)
 (function() {
-    const el = document.getElementById('analysisText');
-    if (!el) return;
-    const raw = JSON.parse(document.getElementById('resultData').textContent) || '';
-    const html = raw.split('\n').map(line => {
-        if (/^(УВЕРЕННОСТЬ|ISHONCH|CONFIDENCE)\s*:/i.test(line.trim())) return '';
-        if (line.trim().startsWith('#')) return '';
-        line = line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:600;">$1</strong>');
-        if (!line.trim()) return '';
-        return '<p style="margin:0 0 10px 0;line-height:1.65;">' + line + '</p>';
-    }).filter(x => x).join('');
-    el.innerHTML = html;
+    // ── Render AI text ─────────────────────────────────────────────────────────
+    var el = document.getElementById('analysisText');
+    var raw = '';
+    try {
+        raw = JSON.parse(document.getElementById('resultData').textContent) || '';
+    } catch(e) { raw = ''; }
+
+    if (raw) {
+        var html = raw.split('\n').map(function(line) {
+            // Strip confidence lines in all three languages
+            if (/^\s*(УВЕРЕННОСТЬ|ISHONCH|CONFIDENCE)\s*:/i.test(line)) return '';
+            if (/^\s*#/.test(line)) return '';
+            // Bold markdown
+            line = line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:600;">$1</strong>');
+            if (!line.trim()) return '';
+            return '<p style="margin:0 0 10px 0;line-height:1.65;">' + line + '</p>';
+        }).filter(Boolean).join('');
+        el.innerHTML = html || '<p style="color:var(--muted);">—</p>';
+    } else {
+        el.innerHTML = '<p style="color:var(--muted);">—</p>';
+    }
+
+    // ── Confidence bar & badge ─────────────────────────────────────────────────
+    var confidence = {{ inspection.confidence|default:0 }};
+    var confBar = document.getElementById('confBar');
+    var confBadge = document.getElementById('confBadge');
+    var lang = getCookie('lang') || 'ru';
+    var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
+
+    setTimeout(function() {
+        confBar.style.width = confidence + '%';
+        if (confidence < 40) {
+            confBar.className = 'conf-bar low';
+            confBadge.className = 'conf-badge conf-low';
+            confBadge.textContent = confidence + (t.result_conf_low || '% — низкая');
+        } else if (confidence < 70) {
+            confBar.className = 'conf-bar mid';
+            confBadge.className = 'conf-badge conf-mid';
+            confBadge.textContent = confidence + (t.result_conf_mid || '% — средняя');
+        } else {
+            confBar.className = 'conf-bar high';
+            confBadge.className = 'conf-badge conf-high';
+            confBadge.textContent = confidence + (t.result_conf_high || '% — высокая');
+        }
+    }, 300);
 })();
 </script>
 {% endblock %}

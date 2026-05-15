@@ -4,6 +4,7 @@ from .models import Inspection
 from .forms import InspectionForm
 from .ai_module import analyze_image
 
+VALID_LANGUAGES = {'ru', 'uz', 'en'}
 
 @login_required
 def index(request):
@@ -11,7 +12,6 @@ def index(request):
         inspections = Inspection.objects.select_related('vehicle', 'user').all()
     else:
         inspections = Inspection.objects.select_related('vehicle', 'user').filter(user=request.user)
-
     return render(request, 'vehicles/index.html', {'inspections': inspections})
 
 
@@ -24,16 +24,20 @@ def upload(request):
         inspection.user = request.user
         inspection.save()
 
-        # Read language from POST or cookie
-        language = request.POST.get('language') or request.COOKIES.get('lang', 'ru')
+        # Resolve language: form POST → cookie → default 'ru'
+        language = request.POST.get('language', '').strip()
+        if language not in VALID_LANGUAGES:
+            language = request.COOKIES.get('lang', 'ru').strip()
+        if language not in VALID_LANGUAGES:
+            language = 'ru'
 
         result = analyze_image(inspection.image.path, language=language)
-        inspection.result = result["text"]
-        inspection.confidence = result["confidence"]
+        inspection.result = result['text']
+        inspection.confidence = result['confidence']
         inspection.save()
 
         response = redirect('result', inspection.id)
-        response.set_cookie('lang', language, max_age=60*60*24*365)
+        response.set_cookie('lang', language, max_age=60 * 60 * 24 * 365)
         return response
 
     return render(request, 'vehicles/upload.html', {'form': form})

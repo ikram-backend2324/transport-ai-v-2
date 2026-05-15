@@ -14,8 +14,8 @@
             --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
             --radius: 14px; --radius-sm: 8px;
         }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter','Segoe UI',sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; }
-        body::before { content:''; position:fixed; inset:0; background-image: linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px), linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter','Segoe UI',sans-serif; font-size:15px; line-height:1.6; min-height:100vh; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
         body::after { content:''; position:fixed; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(56,189,248,0.06) 0%,transparent 70%); top:-200px; right:-200px; pointer-events:none; z-index:0; animation:orb-drift 20s ease-in-out infinite alternate; }
         @keyframes orb-drift { from{transform:translate(0,0)} to{transform:translate(-60px,80px)} }
         .modern-btn { background:linear-gradient(135deg,#4f46e5,#9333ea); color:white; border:none; padding:14px 28px; font-size:16px; font-weight:600; border-radius:12px; cursor:pointer; transition:all 0.3s ease; box-shadow:0 8px 20px rgba(0,0,0,0.2); position:relative; overflow:hidden; }
@@ -33,7 +33,6 @@
         .nav-links a:hover { color:var(--text); background:var(--surface2); border-color:var(--border); }
         .nav-links a.btn-nav { color:var(--accent); border-color:rgba(56,189,248,0.3); }
         .nav-links a.btn-nav:hover { background:rgba(56,189,248,0.1); border-color:var(--accent); }
-        /* Language switcher */
         .lang-switcher { display:flex; align-items:center; gap:3px; background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:3px; margin-left:8px; }
         .lang-btn { background:none; border:none; color:var(--muted); font-size:12px; font-weight:600; padding:4px 9px; border-radius:14px; cursor:pointer; transition:all 0.2s; letter-spacing:0.03em; font-family:inherit; }
         .lang-btn:hover { color:var(--text); }
@@ -61,6 +60,181 @@
         img { border-radius:var(--radius-sm); }
         .badge { display:inline-flex; align-items:center; background:rgba(34,197,94,0.15); color:#22c55e; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:500; border:1px solid rgba(34,197,94,0.25); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         i18n script MUST be in <head> so child templates can use
+         getCookie / TRANSLATIONS / applyLang in their own <script> tags
+         ═══════════════════════════════════════════════════════════════ -->
+    <script>
+    // ── Cookie helpers ─────────────────────────────────────────────────────────
+    function getCookie(name) {
+        var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+    function setCookie(name, value, days) {
+        var expires = new Date(Date.now() + days * 864e5).toUTCString();
+        document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+    }
+
+    // ── Full translation dictionary ────────────────────────────────────────────
+    var TRANSLATIONS = {
+        uz: {
+            // Navbar
+            nav_home:'Bosh sahifa', nav_check:'+ Tekshirish', nav_logout:'Chiqish',
+            // Index
+            index_title:'Tekshirishlar', index_new:'+ Yangi tekshiruv',
+            index_empty_title:"Hali tekshirishlar yo'q",
+            index_empty_sub:'Tahlil qilish uchun avtomobil rasmini yuklang',
+            index_start:'Tekshirishni boshlash',
+            // Upload
+            upload_card_title:'Rasmni yuklash',
+            upload_analyzing:'Tasvir tahlil qilinmoqda',
+            upload_step1:'Rasm yuklanmoqda...',
+            upload_step2:'Obyektlar aniqlanmoqda...',
+            upload_step3:'AI diagnostika...',
+            upload_step4:'Hisobot tayyorlanmoqda...',
+            upload_drag:"Rasmni shu yerga torting yoki tanlash uchun bosing",
+            upload_formats:'JPG, PNG, WEBP — 10 MBgacha',
+            upload_preview:"Ko'rinish",
+            upload_submit:'Tahlil qilish',
+            // Form labels
+            label_vehicle:'Transport vositasi', label_image:'Fotosurat',
+            label_username:'Foydalanuvchi nomi', label_password:'Parol',
+            label_password1:'Parol', label_password2:'Parolni tasdiqlang',
+            // Result
+            result_heading:'Tahlil', result_heading2:'natijasi',
+            result_back:'← Orqaga', result_ai_conf:'AI ishonchliligi',
+            result_ai_title:'AI-Diagnostika', result_ai_sub:'Claude Vision',
+            result_conf_label:'Model ishonchliligi',
+            result_done:'Tahlil yakunlandi', result_new:'Yangi tekshiruv',
+            result_conf_low:'% — past', result_conf_mid:"% — o'rta", result_conf_high:'% — yuqori',
+            // Login
+            login_title:'Kirish', login_btn:'Kirish',
+            login_no_account:"Akkount yo'qmi?", login_register:"Ro'yxatdan o'tish",
+            // Register
+            reg_title:"Ro'yxatdan o'tish", reg_btn:'Hisob yaratish',
+            reg_have_account:'Allaqachon hisobingiz bormi?', reg_login:'Kirish',
+        },
+        ru: {
+            nav_home:'Главная', nav_check:'+ Проверка', nav_logout:'Выйти',
+            index_title:'Проверки', index_new:'+ Новая проверка',
+            index_empty_title:'Проверок пока нет',
+            index_empty_sub:'Загрузите фото автомобиля для анализа',
+            index_start:'Начать проверку',
+            upload_card_title:'Загрузка изображения',
+            upload_analyzing:'Анализ изображения',
+            upload_step1:'Загрузка изображения...',
+            upload_step2:'Распознавание объектов...',
+            upload_step3:'AI-диагностика...',
+            upload_step4:'Формирование отчёта...',
+            upload_drag:'Перетащите фото или нажмите для выбора',
+            upload_formats:'JPG, PNG, WEBP до 10 МБ',
+            upload_preview:'Предпросмотр',
+            upload_submit:'Анализировать',
+            label_vehicle:'Транспортное средство', label_image:'Фотография',
+            label_username:'Имя пользователя', label_password:'Пароль',
+            label_password1:'Пароль', label_password2:'Подтвердите пароль',
+            result_heading:'Результат', result_heading2:'анализа',
+            result_back:'← Назад', result_ai_conf:'уверенность AI',
+            result_ai_title:'AI-диагностика', result_ai_sub:'Claude Vision',
+            result_conf_label:'Уверенность модели',
+            result_done:'Анализ завершён', result_new:'Новая проверка',
+            result_conf_low:'% — низкая', result_conf_mid:'% — средняя', result_conf_high:'% — высокая',
+            login_title:'Вход', login_btn:'Войти',
+            login_no_account:'Нет аккаунта?', login_register:'Регистрация',
+            reg_title:'Регистрация', reg_btn:'Создать аккаунт',
+            reg_have_account:'Уже есть аккаунт?', reg_login:'Войти',
+        },
+        en: {
+            nav_home:'Home', nav_check:'+ New Check', nav_logout:'Log Out',
+            index_title:'Inspections', index_new:'+ New Inspection',
+            index_empty_title:'No inspections yet',
+            index_empty_sub:'Upload a vehicle photo to start analysis',
+            index_start:'Start Inspection',
+            upload_card_title:'Upload Image',
+            upload_analyzing:'Analysing Image',
+            upload_step1:'Uploading image...',
+            upload_step2:'Detecting objects...',
+            upload_step3:'AI diagnostics...',
+            upload_step4:'Generating report...',
+            upload_drag:'Drag & drop a photo or click to browse',
+            upload_formats:'JPG, PNG, WEBP up to 10 MB',
+            upload_preview:'Preview',
+            upload_submit:'Analyse',
+            label_vehicle:'Vehicle', label_image:'Photo',
+            label_username:'Username', label_password:'Password',
+            label_password1:'Password', label_password2:'Confirm Password',
+            result_heading:'Analysis', result_heading2:'Result',
+            result_back:'← Back', result_ai_conf:'AI confidence',
+            result_ai_title:'AI Diagnostics', result_ai_sub:'Claude Vision',
+            result_conf_label:'Model confidence',
+            result_done:'Analysis complete', result_new:'New Inspection',
+            result_conf_low:'% — low', result_conf_mid:'% — medium', result_conf_high:'% — high',
+            login_title:'Sign In', login_btn:'Sign In',
+            login_no_account:'No account yet?', login_register:'Register',
+            reg_title:'Register', reg_btn:'Create Account',
+            reg_have_account:'Already have an account?', reg_login:'Sign In',
+        },
+    };
+
+    // ── Apply translations to DOM ──────────────────────────────────────────────
+    function applyLang(lang) {
+        var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
+
+        // Translate [data-i18n] elements — safely, only text content
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            var key = el.getAttribute('data-i18n');
+            if (t[key] === undefined) return;
+            // If element has no child elements, set textContent directly
+            if (el.children.length === 0) {
+                el.textContent = t[key];
+            } else {
+                // Element has child elements (e.g. <h2> with <span>) — update only direct text nodes
+                Array.from(el.childNodes).forEach(function(node) {
+                    if (node.nodeType === 3 /* TEXT_NODE */ && node.textContent.trim()) {
+                        node.textContent = ' ' + t[key] + ' ';
+                    }
+                });
+            }
+        });
+
+        // Translate form field labels by their for= attribute
+        var labelMap = {
+            'id_username': 'label_username',
+            'id_password': 'label_password',
+            'id_password1': 'label_password1',
+            'id_password2': 'label_password2',
+            'id_vehicle': 'label_vehicle',
+            'id_image': 'label_image',
+        };
+        document.querySelectorAll('label[for]').forEach(function(label) {
+            var key = labelMap[label.getAttribute('for')];
+            if (key && t[key]) label.textContent = t[key];
+        });
+
+        // Update active lang button
+        document.querySelectorAll('.lang-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+        });
+
+        document.documentElement.lang = lang;
+
+        // Sync hidden language inputs
+        document.querySelectorAll('input[name="language"]').forEach(function(inp) {
+            inp.value = lang;
+        });
+    }
+
+    function setLang(lang) {
+        setCookie('lang', lang, 365);
+        applyLang(lang);
+    }
+
+    // Apply immediately when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        applyLang(getCookie('lang') || 'ru');
+    });
+    </script>
 </head>
 <body>
 
@@ -70,9 +244,9 @@
         <span class="brand-name">AI <span>Transport</span></span>
     </a>
     <div class="nav-links">
-        <a href="/" data-i18n="nav_home"></a>
-        <a href="/upload/" class="btn-nav" data-i18n="nav_check"></a>
-        <a href="/users/logout/" data-i18n="nav_logout"></a>
+        <a href="/" data-i18n="nav_home">Главная</a>
+        <a href="/upload/" class="btn-nav" data-i18n="nav_check">+ Проверка</a>
+        <a href="/users/logout/" data-i18n="nav_logout">Выйти</a>
         <div class="lang-switcher">
             <button class="lang-btn" data-lang="uz" onclick="setLang('uz')">UZ</button>
             <button class="lang-btn" data-lang="ru" onclick="setLang('ru')">RU</button>
@@ -84,240 +258,6 @@
 <div class="container">
     {% block content %}{% endblock %}
 </div>
-
-<script>
-// ─── Global translation dictionary ───────────────────────────────────────────
-const TRANSLATIONS = {
-    uz: {
-        // Navbar
-        nav_home:   "Bosh sahifa",
-        nav_check:  "+ Tekshirish",
-        nav_logout: "Chiqish",
-        // Index page
-        index_title:       "Tekshirishlar",
-        index_new:         "+ Yangi tekshiruv",
-        index_empty_title: "Hali tekshirishlar yo'q",
-        index_empty_sub:   "Tahlil qilish uchun avtomobil rasmini yuklang",
-        index_start:       "Tekshirishni boshlash",
-        index_confidence:  "ishonch",
-        // Upload page
-        upload_card_title:  "Rasmni yuklash",
-        upload_analyzing:   "Tasvir tahlil qilinmoqda",
-        upload_step1:       "Rasm yuklanmoqda...",
-        upload_step2:       "Obyektlar aniqlanmoqda...",
-        upload_step3:       "AI diagnostika...",
-        upload_step4:       "Hisobot tayyorlanmoqda...",
-        upload_drag:        "Rasmni shu yerga torting yoki tanlash uchun bosing",
-        upload_formats:     "JPG, PNG, WEBP — 10 MBgacha",
-        upload_preview:     "Ko'rinish",
-        upload_submit:      "Tahlil qilish",
-        upload_label_vehicle: "Transport vositasi",
-        upload_label_image:   "Fotosurat",
-        // Result page
-        result_heading:     "Tahlil",
-        result_heading2:    "natijasi",
-        result_back:        "← Orqaga",
-        result_ai_conf:     "AI ishonchliligi",
-        result_ai_title:    "AI-Diagnostika",
-        result_ai_sub:      "Claude Vision",
-        result_conf_label:  "Model ishonchliligi",
-        result_done:        "Tahlil yakunlandi",
-        result_new:         "Yangi tekshiruv",
-        result_conf_low:    "% — past",
-        result_conf_mid:    "% — o'rta",
-        result_conf_high:   "% — yuqori",
-        // Login page
-        login_title:        "Kirish",
-        login_username:     "Foydalanuvchi nomi",
-        login_password:     "Parol",
-        login_btn:          "Kirish",
-        login_no_account:   "Akkount yo'qmi?",
-        login_register:     "Ro'yxatdan o'tish",
-        // Register page
-        reg_title:          "Ro'yxatdan o'tish",
-        reg_username:       "Foydalanuvchi nomi",
-        reg_password1:      "Parol",
-        reg_password2:      "Parolni tasdiqlang",
-        reg_btn:            "Hisob yaratish",
-        reg_have_account:   "Allaqachon hisobingiz bormi?",
-        reg_login:          "Kirish",
-    },
-    ru: {
-        nav_home:   "Главная",
-        nav_check:  "+ Проверка",
-        nav_logout: "Выйти",
-        index_title:       "Проверки",
-        index_new:         "+ Новая проверка",
-        index_empty_title: "Проверок пока нет",
-        index_empty_sub:   "Загрузите фото автомобиля для анализа",
-        index_start:       "Начать проверку",
-        index_confidence:  "уверенность",
-        upload_card_title:  "Загрузка изображения",
-        upload_analyzing:   "Анализ изображения",
-        upload_step1:       "Загрузка изображения...",
-        upload_step2:       "Распознавание объектов...",
-        upload_step3:       "AI-диагностика...",
-        upload_step4:       "Формирование отчёта...",
-        upload_drag:        "Перетащите фото или нажмите для выбора",
-        upload_formats:     "JPG, PNG, WEBP до 10 МБ",
-        upload_preview:     "Предпросмотр",
-        upload_submit:      "Анализировать",
-        upload_label_vehicle: "Транспортное средство",
-        upload_label_image:   "Фотография",
-        result_heading:     "Результат",
-        result_heading2:    "анализа",
-        result_back:        "← Назад",
-        result_ai_conf:     "уверенность AI",
-        result_ai_title:    "AI-диагностика",
-        result_ai_sub:      "Claude Vision",
-        result_conf_label:  "Уверенность модели",
-        result_done:        "Анализ завершён",
-        result_new:         "Новая проверка",
-        result_conf_low:    "% — низкая",
-        result_conf_mid:    "% — средняя",
-        result_conf_high:   "% — высокая",
-        login_title:        "Вход",
-        login_username:     "Имя пользователя",
-        login_password:     "Пароль",
-        login_btn:          "Войти",
-        login_no_account:   "Нет аккаунта?",
-        login_register:     "Регистрация",
-        reg_title:          "Регистрация",
-        reg_username:       "Имя пользователя",
-        reg_password1:      "Пароль",
-        reg_password2:      "Подтвердите пароль",
-        reg_btn:            "Создать аккаунт",
-        reg_have_account:   "Уже есть аккаунт?",
-        reg_login:          "Войти",
-    },
-    en: {
-        nav_home:   "Home",
-        nav_check:  "+ New Check",
-        nav_logout: "Log Out",
-        index_title:       "Inspections",
-        index_new:         "+ New Inspection",
-        index_empty_title: "No inspections yet",
-        index_empty_sub:   "Upload a vehicle photo to start analysis",
-        index_start:       "Start Inspection",
-        index_confidence:  "confidence",
-        upload_card_title:  "Upload Image",
-        upload_analyzing:   "Analysing Image",
-        upload_step1:       "Uploading image...",
-        upload_step2:       "Detecting objects...",
-        upload_step3:       "AI diagnostics...",
-        upload_step4:       "Generating report...",
-        upload_drag:        "Drag & drop a photo or click to browse",
-        upload_formats:     "JPG, PNG, WEBP up to 10 MB",
-        upload_preview:     "Preview",
-        upload_submit:      "Analyse",
-        upload_label_vehicle: "Vehicle",
-        upload_label_image:   "Photo",
-        result_heading:     "Analysis",
-        result_heading2:    "Result",
-        result_back:        "← Back",
-        result_ai_conf:     "AI confidence",
-        result_ai_title:    "AI Diagnostics",
-        result_ai_sub:      "Claude Vision",
-        result_conf_label:  "Model confidence",
-        result_done:        "Analysis complete",
-        result_new:         "New Inspection",
-        result_conf_low:    "% — low",
-        result_conf_mid:    "% — medium",
-        result_conf_high:   "% — high",
-        login_title:        "Sign In",
-        login_username:     "Username",
-        login_password:     "Password",
-        login_btn:          "Sign In",
-        login_no_account:   "No account yet?",
-        login_register:     "Register",
-        reg_title:          "Register",
-        reg_username:       "Username",
-        reg_password1:      "Password",
-        reg_password2:      "Confirm Password",
-        reg_btn:            "Create Account",
-        reg_have_account:   "Already have an account?",
-        reg_login:          "Sign In",
-    },
-};
-
-// ─── Cookie helpers ───────────────────────────────────────────────────────────
-function getCookie(name) {
-    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-    return m ? decodeURIComponent(m[1]) : null;
-}
-function setCookie(name, value, days) {
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${new Date(Date.now()+days*864e5).toUTCString()}; path=/`;
-}
-
-// ─── Apply all translations ───────────────────────────────────────────────────
-function applyLang(lang) {
-    const t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
-
-    // 1. data-i18n elements
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (t[key] !== undefined) el.textContent = t[key];
-    });
-
-    // 2. data-i18n-placeholder elements
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        const key = el.getAttribute('data-i18n-placeholder');
-        if (t[key] !== undefined) el.placeholder = t[key];
-    });
-
-    // 3. Translate form labels by their for-attribute / field name
-    const labelMap = {
-        username:  'login_username',
-        password:  'login_password',
-        password1: 'reg_password1',
-        password2: 'reg_password2',
-        vehicle:   'upload_label_vehicle',
-        image:     'upload_label_image',
-    };
-    document.querySelectorAll('label').forEach(label => {
-        const forAttr = label.getAttribute('for') || '';
-        // Match by id_ prefix (Django renders id_fieldname)
-        for (const [fieldName, tKey] of Object.entries(labelMap)) {
-            if (forAttr.includes(fieldName) || label.textContent.trim() === '') continue;
-            // Check if the label wraps an input with that name
-        }
-        // Simpler: just check the for attribute
-        const fieldName = forAttr.replace('id_', '');
-        if (labelMap[fieldName] && t[labelMap[fieldName]]) {
-            label.textContent = t[labelMap[fieldName]];
-        }
-    });
-
-    // 4. Also translate labels that DON'T have a `for` attribute but have data-label-key
-    document.querySelectorAll('[data-label-key]').forEach(el => {
-        const key = el.getAttribute('data-label-key');
-        if (t[key] !== undefined) el.textContent = t[key];
-    });
-
-    // 5. Update lang buttons
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-    });
-
-    // 6. Update html lang attribute
-    document.documentElement.lang = lang;
-
-    // 7. Sync any hidden language inputs
-    document.querySelectorAll('input[name="language"]').forEach(inp => inp.value = lang);
-}
-
-function setLang(lang) {
-    setCookie('lang', lang, 365);
-    applyLang(lang);
-}
-
-// Init
-const _initLang = getCookie('lang') || 'ru';
-// Defer slightly so page-specific scripts can run first
-document.addEventListener('DOMContentLoaded', () => applyLang(_initLang));
-// Also run immediately in case DOMContentLoaded already fired
-applyLang(_initLang);
-</script>
 
 </body>
 </html>
