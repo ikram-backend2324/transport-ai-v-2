@@ -104,15 +104,28 @@ def analyze_image(image_path, language="ru"):
 
         confidence = 0.0
         lines = full_text.splitlines()
+        import re
+        # Strip markdown bold (**), asterisks, and whitespace before matching
+        clean_key = confidence_key.rstrip(":")
         for line in lines:
-            if line.strip().startswith(confidence_key):
+            # Remove markdown bold markers and strip whitespace
+            clean_line = re.sub(r'\*+', '', line).strip()
+            if re.match(r'(?i)' + re.escape(clean_key) + r'\s*:', clean_line):
                 try:
-                    confidence = float(line.split(":")[1].strip())
-                except ValueError:
+                    value_part = clean_line.split(":", 1)[1].strip()
+                    # Extract the first number found (e.g. "85" from "85" or "85.")
+                    match = re.search(r'[\d.]+', value_part)
+                    if match:
+                        confidence = float(match.group())
+                except (ValueError, IndexError):
                     pass
 
+        def is_confidence_line(line):
+            clean = re.sub(r'\*+', '', line).strip()
+            return bool(re.match(r'(?i)' + re.escape(clean_key) + r'\s*:', clean))
+
         display_text = "\n".join(
-            line for line in lines if not line.strip().startswith(confidence_key)
+            line for line in lines if not is_confidence_line(line)
         ).strip()
 
         return {
