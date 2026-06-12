@@ -2,6 +2,7 @@
 Django settings for transport_ai project.
 """
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
