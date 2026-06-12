@@ -1,0 +1,745 @@
+{% comment %}
+Reusable Three.js helpers. Include with {% include 'vehicles/partials/three_car.html' %}.
+
+Exposes two globals on window:
+  - window.createCar3D(container, metrics, opts): builds an interactive damage-aware car
+  - window.createSchematicCar(container, metrics): builds a top-down SVG schematic (no Three.js)
+
+Both render responsively into their parent and auto-handle resize.
+{% endcomment %}
+<script>
+(function(){
+'use strict';
+
+/* Severity / score → colour helper (used in both 3D and SVG widgets). */
+function scoreColor(score){
+    // 0-39 red, 40-69 amber, 70-100 green
+    if(score >= 70) return new THREE.Color(0x00ffb3);
+    if(score >= 40) return new THREE.Color(0xffc93c);
+    return new THREE.Color(0xff4d6d);
+}
+function scoreColorHex(score){
+    if(score >= 70) return '#00ffb3';
+    if(score >= 40) return '#ffc93c';
+    return '#ff4d6d';
+}
+window.scoreColor = scoreColor;
+window.scoreColorHex = scoreColorHex;
+
+/* ─────────────────────────  3-D CAR  ─────────────────────────
+ * Builds a stylised low-poly car from primitives. Returned object
+ * has .dispose() so callers can clean up on page transition.
+ */
+window.createCar3D = function(container, metrics, opts){
+    if(!container || typeof THREE === 'undefined') return null;
+    metrics = metrics || {};
+    opts = opts || {};
+    var damage = metrics.damage_areas || [];
+    var damaged = {};
+    damage.forEach(function(d){ damaged[d] = true; });
+
+    /* Renderer */
+    var w = container.clientWidth || 600;
+    var h = container.clientHeight || 400;
+    var renderer = new THREE.WebGLRenderer({ alpha:true, antialias:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h, false);
+    renderer.setClearColor(0x000000, 0);
+    container.appendChild(renderer.domElement);
+
+    /* Scene + camera */
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(38, w/h, 0.1, 100);
+    camera.position.set(6.5, 4.2, 7.5);
+    camera.lookAt(0, 0.8, 0);
+
+    /* Lights */
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    var keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    keyLight.position.set(6, 8, 4);
+    scene.add(keyLight);
+    var cyanLight = new THREE.PointLight(0x00d2ff, 1.6, 14);
+    cyanLight.position.set(-5, 3, 4);
+    scene.add(cyanLight);
+    var purpleLight = new THREE.PointLight(0xa855f7, 0.8, 12);
+    purpleLight.position.set(5, 2, -4);
+    scene.add(purpleLight);
+
+    /* Ground grid (subtle) */
+    var gridHelper = new THREE.GridHelper(20, 20, 0x00d2ff, 0x1a2438);
+    gridHelper.material.opacity = 0.25;
+    gridHelper.material.transparent = true;
+    gridHelper.position.y = -0.01;
+    scene.add(gridHelper);
+
+    /* Soft circular shadow under the car */
+    var shadowGeom = new THREE.CircleGeometry(2.6, 32);
+    var shadowMat = new THREE.MeshBasicMaterial({
+        color: 0x00d2ff,
+        transparent: true,
+        opacity: 0.18,
+    });
+    var shadowMesh = new THREE.Mesh(shadowGeom, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.01;
+    scene.add(shadowMesh);
+
+    /* Car root group */
+    var car = new THREE.Group();
+    scene.add(car);
+
+    /* Helper: build a part with a colour driven by its damage score. */
+    function partMaterial(baseColor, score, opacityOverride){
+        var col = (score === undefined) ? new THREE.Color(baseColor) : scoreColor(score);
+        // If a part is healthy we use the baseColor; otherwise blend toward score color
+        if(score >= 70 || score === undefined){
+            col = new THREE.Color(baseColor);
+        }
+        return new THREE.MeshStandardMaterial({
+            color: col,
+            metalness: 0.55,
+            roughness: 0.38,
+            emissive: (score !== undefined && score < 70) ? scoreColor(score) : new THREE.Color(0x000000),
+            emissiveIntensity: (score !== undefined && score < 70) ? 0.35 : 0.0,
+            transparent: opacityOverride !== undefined,
+            opacity: opacityOverride !== undefined ? opacityOverride : 1.0,
+        });
+    }
+
+    var pulsing = [];
+    function addPart(key, mesh){
+        mesh.userData.damageKey = key;
+        if(damaged[key]){
+            // Pulsing red overlay
+            mesh.material.emissive = new THREE.Color(0xff4d6d);
+            mesh.material.emissiveIntensity = 0.6;
+            mesh.material.color = new THREE.Color(0xff4d6d);
+            mesh.material.metalness = 0.2;
+            pulsing.push(mesh);
+        }
+        car.add(mesh);
+        return mesh;
+    }
+
+    var bodyScore = metrics.body !== undefined ? metrics.body : 100;
+    var paintScore = metrics.paint !== undefined ? metrics.paint : 100;
+    var bodyBase = 0x1f3a5c;
+    var bodyColor = (paintScore < 70) ? scoreColor(paintScore).getHex() : bodyBase;
+
+    /* Main lower body */
+    var lowerBody = new THREE.Mesh(
+        new THREE.BoxGeometry(4.4, 0.85, 2.0),
+        new THREE.MeshStandardMaterial({
+            color: bodyColor, metalness: 0.65, roughness: 0.35,
+            emissive: bodyScore < 70 ? scoreColor(bodyScore) : 0x000000,
+            emissiveIntensity: bodyScore < 70 ? 0.25 : 0.0,
+        })
+    );
+    lowerBody.position.set(0, 0.75, 0);
+    car.add(lowerBody);
+
+    /* Cabin (upper body) */
+    var cabin = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.85, 1.85),
+        new THREE.MeshStandardMaterial({
+            color: bodyColor, metalness: 0.7, roughness: 0.3,
+        })
+    );
+    cabin.position.set(-0.05, 1.55, 0);
+    car.add(cabin);
+
+    /* Roof (smaller cap) */
+    var roof = new THREE.Mesh(
+        new THREE.BoxGeometry(2.1, 0.08, 1.8),
+        partMaterial(bodyColor, undefined)
+    );
+    roof.position.set(-0.05, 1.97, 0);
+    addPart('roof', roof);
+
+    /* Hood */
+    var hood = new THREE.Mesh(
+        new THREE.BoxGeometry(1.3, 0.08, 1.92),
+        partMaterial(bodyColor, undefined)
+    );
+    hood.position.set(1.55, 1.19, 0);
+    addPart('hood', hood);
+
+    /* Trunk lid */
+    var trunk = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.08, 1.92),
+        partMaterial(bodyColor, undefined)
+    );
+    trunk.position.set(-1.7, 1.19, 0);
+    car.add(trunk);
+
+    /* Doors (left/right) */
+    var leftDoor = new THREE.Mesh(
+        new THREE.BoxGeometry(1.7, 0.78, 0.06),
+        partMaterial(bodyColor, undefined)
+    );
+    leftDoor.position.set(-0.05, 0.78, -1.02);
+    addPart('left_door', leftDoor);
+
+    var rightDoor = new THREE.Mesh(
+        new THREE.BoxGeometry(1.7, 0.78, 0.06),
+        partMaterial(bodyColor, undefined)
+    );
+    rightDoor.position.set(-0.05, 0.78, 1.02);
+    addPart('right_door', rightDoor);
+
+    /* Fenders (wheel arches accent panels) */
+    var lFenderF = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.45, 0.07),
+        partMaterial(bodyColor, undefined)
+    );
+    lFenderF.position.set(1.3, 0.55, -1.02);
+    addPart('left_fender', lFenderF);
+
+    var rFenderF = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.45, 0.07),
+        partMaterial(bodyColor, undefined)
+    );
+    rFenderF.position.set(1.3, 0.55, 1.02);
+    addPart('right_fender', rFenderF);
+
+    /* Bumpers */
+    var frontBumper = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.4, 2.05),
+        partMaterial(0x0c1828, undefined)
+    );
+    frontBumper.position.set(2.3, 0.55, 0);
+    addPart('front_bumper', frontBumper);
+
+    var rearBumper = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.4, 2.05),
+        partMaterial(0x0c1828, undefined)
+    );
+    rearBumper.position.set(-2.3, 0.55, 0);
+    addPart('rear_bumper', rearBumper);
+
+    /* Windshield (front, tilted) */
+    var windshield = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.85, 1.78),
+        new THREE.MeshStandardMaterial({
+            color: 0x4dd3ff, transparent: true, opacity: damaged['windshield'] ? 0.55 : 0.65,
+            metalness: 0.1, roughness: 0.1,
+            emissive: damaged['windshield'] ? 0xff4d6d : 0x002a3d,
+            emissiveIntensity: damaged['windshield'] ? 0.55 : 0.4,
+        })
+    );
+    windshield.position.set(0.94, 1.55, 0);
+    windshield.rotation.z = 0.32;
+    windshield.userData.damageKey = 'windshield';
+    if(damaged['windshield']) pulsing.push(windshield);
+    car.add(windshield);
+
+    /* Rear window (tilted backwards) */
+    var rearWin = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.85, 1.78),
+        new THREE.MeshStandardMaterial({
+            color: 0x4dd3ff, transparent: true, opacity: damaged['rear_window'] ? 0.55 : 0.65,
+            metalness: 0.1, roughness: 0.1,
+            emissive: damaged['rear_window'] ? 0xff4d6d : 0x002a3d,
+            emissiveIntensity: damaged['rear_window'] ? 0.55 : 0.4,
+        })
+    );
+    rearWin.position.set(-1.08, 1.55, 0);
+    rearWin.rotation.z = -0.32;
+    rearWin.userData.damageKey = 'rear_window';
+    if(damaged['rear_window']) pulsing.push(rearWin);
+    car.add(rearWin);
+
+    /* Side windows (left/right) */
+    function sideWindow(zPos){
+        var m = new THREE.Mesh(
+            new THREE.BoxGeometry(2.0, 0.7, 0.05),
+            new THREE.MeshStandardMaterial({
+                color: 0x4dd3ff, transparent: true, opacity: 0.6,
+                metalness: 0.1, roughness: 0.1,
+                emissive: 0x002a3d, emissiveIntensity: 0.3,
+            })
+        );
+        m.position.set(-0.05, 1.55, zPos);
+        return m;
+    }
+    car.add(sideWindow(-0.93));
+    car.add(sideWindow(0.93));
+
+    /* Headlights */
+    function headlight(zPos){
+        var m = new THREE.Mesh(
+            new THREE.SphereGeometry(0.18, 16, 12),
+            new THREE.MeshStandardMaterial({
+                color: damaged['headlights'] ? 0xff4d6d : 0xfff6c0,
+                emissive: damaged['headlights'] ? 0xff4d6d : 0xfff200,
+                emissiveIntensity: damaged['headlights'] ? 0.7 : 0.9,
+                metalness: 0.3, roughness: 0.2,
+            })
+        );
+        m.position.set(2.32, 0.85, zPos);
+        m.scale.set(0.5, 0.6, 1);
+        m.userData.damageKey = 'headlights';
+        if(damaged['headlights']) pulsing.push(m);
+        return m;
+    }
+    car.add(headlight(-0.62));
+    car.add(headlight(0.62));
+
+    /* Taillights */
+    function taillight(zPos){
+        var m = new THREE.Mesh(
+            new THREE.SphereGeometry(0.16, 16, 12),
+            new THREE.MeshStandardMaterial({
+                color: damaged['taillights'] ? 0xff4d6d : 0xff3344,
+                emissive: damaged['taillights'] ? 0xff4d6d : 0xcc1133,
+                emissiveIntensity: damaged['taillights'] ? 0.9 : 0.7,
+                metalness: 0.4, roughness: 0.3,
+            })
+        );
+        m.position.set(-2.32, 0.85, zPos);
+        m.scale.set(0.4, 0.5, 1);
+        m.userData.damageKey = 'taillights';
+        if(damaged['taillights']) pulsing.push(m);
+        return m;
+    }
+    car.add(taillight(-0.62));
+    car.add(taillight(0.62));
+
+    /* Mirrors */
+    function mirror(zPos, key){
+        var m = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.18, 0.4),
+            partMaterial(bodyColor, undefined)
+        );
+        m.position.set(0.65, 1.3, zPos);
+        m.userData.damageKey = key;
+        if(damaged[key]){
+            m.material.emissive = new THREE.Color(0xff4d6d);
+            m.material.emissiveIntensity = 0.6;
+            m.material.color = new THREE.Color(0xff4d6d);
+            pulsing.push(m);
+        }
+        return m;
+    }
+    car.add(mirror(-1.13, 'left_mirror'));
+    car.add(mirror(1.13, 'right_mirror'));
+
+    /* Wheels */
+    var tiresScore = metrics.tires !== undefined ? metrics.tires : 100;
+    var tireColor = damaged['wheels'] ? 0xff4d6d : 0x0a0d14;
+    var rimColor = damaged['wheels'] ? 0xff8a98 : 0x9aa8bc;
+    function wheel(xPos, zPos){
+        var grp = new THREE.Group();
+        var tire = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.45, 0.45, 0.3, 24),
+            new THREE.MeshStandardMaterial({
+                color: tireColor, metalness: 0.2, roughness: 0.9,
+                emissive: damaged['wheels'] ? 0xff4d6d : 0x000000,
+                emissiveIntensity: damaged['wheels'] ? 0.4 : 0,
+            })
+        );
+        tire.rotation.x = Math.PI / 2;
+        grp.add(tire);
+        var rim = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.25, 0.25, 0.32, 16),
+            new THREE.MeshStandardMaterial({
+                color: rimColor, metalness: 0.85, roughness: 0.25,
+            })
+        );
+        rim.rotation.x = Math.PI / 2;
+        grp.add(rim);
+        // Spokes (decorative)
+        for(var i=0; i<5; i++){
+            var spoke = new THREE.Mesh(
+                new THREE.BoxGeometry(0.4, 0.04, 0.08),
+                new THREE.MeshStandardMaterial({ color:0xc9d1e0, metalness:0.9, roughness:0.2 })
+            );
+            spoke.rotation.x = (i * Math.PI * 2 / 5);
+            grp.add(spoke);
+        }
+        grp.position.set(xPos, 0.45, zPos);
+        grp.userData.damageKey = 'wheels';
+        grp.userData.isWheel = true;
+        if(damaged['wheels']) pulsing.push(grp);
+        return grp;
+    }
+    var wheelFL = wheel(1.4, -1.08); car.add(wheelFL);
+    var wheelFR = wheel(1.4, 1.08); car.add(wheelFR);
+    var wheelRL = wheel(-1.4, -1.08); car.add(wheelRL);
+    var wheelRR = wheel(-1.4, 1.08); car.add(wheelRR);
+    var wheels = [wheelFL, wheelFR, wheelRL, wheelRR];
+
+    /* Damage markers — vertical neon pins above damaged parts */
+    function damageMarker(target){
+        var ringGeom = new THREE.RingGeometry(0.32, 0.42, 24);
+        var ring = new THREE.Mesh(
+            ringGeom,
+            new THREE.MeshBasicMaterial({ color:0xff4d6d, side:THREE.DoubleSide, transparent:true, opacity:0.85 })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        var top = new THREE.Vector3();
+        target.getWorldPosition(top);
+        ring.position.copy(top);
+        ring.position.y = 2.8;
+        ring.userData.isMarker = true;
+        ring.userData.target = target;
+        car.add(ring);
+
+        var beamMat = new THREE.MeshBasicMaterial({ color:0xff4d6d, transparent:true, opacity:0.35 });
+        var beam = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.04, 0.04, 1.6, 8),
+            beamMat
+        );
+        beam.position.copy(top);
+        beam.position.y = 2.0;
+        car.add(beam);
+
+        return ring;
+    }
+    var markers = [];
+    pulsing.forEach(function(p){
+        if(p && p.position) markers.push(damageMarker(p));
+    });
+
+    /* Interaction state */
+    var state = {
+        autoRotate: true,
+        targetRotY: 0,
+        rotY: 0,
+        rotX: 0.05,
+        targetRotX: 0.05,
+        dragging: false,
+        lastX: 0, lastY: 0,
+        running: true,
+    };
+
+    function onPointerDown(e){
+        state.dragging = true; state.autoRotate = false;
+        var p = (e.touches && e.touches[0]) || e;
+        state.lastX = p.clientX; state.lastY = p.clientY;
+        e.preventDefault();
+    }
+    function onPointerMove(e){
+        if(!state.dragging) return;
+        var p = (e.touches && e.touches[0]) || e;
+        var dx = p.clientX - state.lastX;
+        var dy = p.clientY - state.lastY;
+        state.targetRotY -= dx * 0.01;
+        state.targetRotX += dy * 0.005;
+        state.targetRotX = Math.max(-0.6, Math.min(0.9, state.targetRotX));
+        state.lastX = p.clientX; state.lastY = p.clientY;
+        e.preventDefault();
+    }
+    function onPointerUp(){ state.dragging = false; }
+
+    renderer.domElement.style.touchAction = 'none';
+    renderer.domElement.addEventListener('mousedown', onPointerDown);
+    renderer.domElement.addEventListener('touchstart', onPointerDown, { passive:false });
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('touchmove', onPointerMove, { passive:false });
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchend', onPointerUp);
+
+    var clock = new THREE.Clock();
+
+    function animate(){
+        if(!state.running) return;
+        requestAnimationFrame(animate);
+        var t = clock.getElapsedTime();
+
+        if(state.autoRotate){
+            state.targetRotY += 0.003;
+        }
+        state.rotY += (state.targetRotY - state.rotY) * 0.1;
+        state.rotX += (state.targetRotX - state.rotX) * 0.1;
+        car.rotation.y = state.rotY;
+        car.rotation.x = state.rotX;
+
+        // Pulse damaged parts
+        var pulse = 0.55 + Math.sin(t * 3.4) * 0.45;
+        pulsing.forEach(function(p){
+            if(!p) return;
+            if(p.material){
+                p.material.emissiveIntensity = 0.45 + pulse * 0.6;
+            } else if(p.children) {
+                // Group (e.g. wheel)
+                p.children.forEach(function(ch){
+                    if(ch.material && ch.userData) {
+                        // do nothing extra; leave material as is for groups
+                    }
+                });
+            }
+        });
+        markers.forEach(function(m){
+            m.scale.setScalar(0.85 + 0.25 * Math.sin(t * 3.4));
+            m.material.opacity = 0.55 + 0.4 * Math.sin(t * 3.4);
+        });
+
+        // Spin wheels slightly
+        wheels.forEach(function(w){
+            w.children.forEach(function(ch){
+                if(ch.geometry && ch.geometry.type === 'CylinderGeometry'){
+                    ch.rotation.z += 0.02;
+                }
+                if(ch.geometry && ch.geometry.type === 'BoxGeometry'){
+                    ch.rotation.x += 0.02;
+                }
+            });
+        });
+
+        // Pulse the cyan accent light
+        cyanLight.intensity = 1.2 + Math.sin(t * 1.4) * 0.4;
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    /* Resize handling */
+    function resize(){
+        var nw = container.clientWidth;
+        var nh = container.clientHeight;
+        if(nw < 10 || nh < 10) return;
+        renderer.setSize(nw, nh, false);
+        camera.aspect = nw / nh;
+        camera.updateProjectionMatrix();
+    }
+    var ro = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(resize) : null;
+    if(ro) ro.observe(container);
+    window.addEventListener('resize', resize);
+
+    function dispose(){
+        state.running = false;
+        if(ro) ro.disconnect();
+        window.removeEventListener('resize', resize);
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        window.removeEventListener('touchend', onPointerUp);
+        if(renderer.domElement && renderer.domElement.parentNode){
+            renderer.domElement.parentNode.removeChild(renderer.domElement);
+        }
+        renderer.dispose();
+    }
+
+    return { renderer:renderer, scene:scene, car:car, dispose:dispose };
+};
+
+/* ─────────────────────  TOP-DOWN SCHEMATIC SVG  ─────────────────────
+ * Pure SVG, no Three.js needed. Renders an outline of the car seen
+ * from above with each zone tinted by its damage state. Resizes
+ * with parent automatically because the SVG has a viewBox.
+ */
+window.createSchematicCar = function(container, metrics){
+    if(!container) return;
+    metrics = metrics || {};
+    var damage = {};
+    (metrics.damage_areas || []).forEach(function(d){ damage[d] = true; });
+    var bodyScore = metrics.body !== undefined ? metrics.body : 100;
+    var paintScore = metrics.paint !== undefined ? metrics.paint : 100;
+    var baseHealth = Math.min(bodyScore, paintScore);
+
+    function partColor(key, healthScore){
+        if(damage[key]) return '#ff4d6d';
+        if(healthScore !== undefined && healthScore < 70){
+            return scoreColorHex(healthScore);
+        }
+        return '#1e3a5c';
+    }
+    function partOpacity(key){
+        return damage[key] ? 0.85 : 0.55;
+    }
+    function partStroke(key){
+        return damage[key] ? '#ff4d6d' : 'rgba(0,210,255,0.5)';
+    }
+
+    container.innerHTML = '';
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 600 320');
+    svg.setAttribute('xmlns', svgNS);
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.display = 'block';
+
+    // Defs: gradients & filters
+    var defs = document.createElementNS(svgNS, 'defs');
+    defs.innerHTML = ''
+      + '<linearGradient id="schBody" x1="0" x2="0" y1="0" y2="1">'
+      +   '<stop offset="0%" stop-color="#1a2b44"/>'
+      +   '<stop offset="100%" stop-color="#0d1828"/>'
+      + '</linearGradient>'
+      + '<radialGradient id="schGlow" cx="50%" cy="50%" r="50%">'
+      +   '<stop offset="0%" stop-color="rgba(0,210,255,0.18)"/>'
+      +   '<stop offset="100%" stop-color="rgba(0,210,255,0)"/>'
+      + '</radialGradient>'
+      + '<filter id="dmgGlow"><feGaussianBlur stdDeviation="3"/></filter>';
+    svg.appendChild(defs);
+
+    // Glow under car
+    var glow = document.createElementNS(svgNS, 'ellipse');
+    glow.setAttribute('cx', '300'); glow.setAttribute('cy', '160');
+    glow.setAttribute('rx', '260'); glow.setAttribute('ry', '120');
+    glow.setAttribute('fill', 'url(#schGlow)');
+    svg.appendChild(glow);
+
+    // Grid background
+    for(var gx=20; gx<600; gx+=30){
+        var line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', gx); line.setAttribute('y1', 0);
+        line.setAttribute('x2', gx); line.setAttribute('y2', 320);
+        line.setAttribute('stroke', 'rgba(0,210,255,0.05)');
+        line.setAttribute('stroke-width', '1');
+        svg.appendChild(line);
+    }
+    for(var gy=20; gy<320; gy+=30){
+        var line2 = document.createElementNS(svgNS, 'line');
+        line2.setAttribute('x1', 0); line2.setAttribute('y1', gy);
+        line2.setAttribute('x2', 600); line2.setAttribute('y2', gy);
+        line2.setAttribute('stroke', 'rgba(0,210,255,0.05)');
+        line2.setAttribute('stroke-width', '1');
+        svg.appendChild(line2);
+    }
+
+    // Helper to make a rect zone
+    function zone(x,y,w,h, key, label, scoreKey, rx){
+        var score = metrics[scoreKey];
+        var r = document.createElementNS(svgNS, 'rect');
+        r.setAttribute('x', x); r.setAttribute('y', y);
+        r.setAttribute('width', w); r.setAttribute('height', h);
+        r.setAttribute('rx', rx === undefined ? 6 : rx);
+        r.setAttribute('fill', partColor(key, score));
+        r.setAttribute('fill-opacity', partOpacity(key));
+        r.setAttribute('stroke', partStroke(key));
+        r.setAttribute('stroke-width', damage[key] ? 2 : 1);
+        if(damage[key]) {
+            var anim = document.createElementNS(svgNS, 'animate');
+            anim.setAttribute('attributeName', 'fill-opacity');
+            anim.setAttribute('values', '0.85;0.5;0.85');
+            anim.setAttribute('dur', '1.5s');
+            anim.setAttribute('repeatCount', 'indefinite');
+            r.appendChild(anim);
+        }
+        svg.appendChild(r);
+
+        if(label){
+            var txt = document.createElementNS(svgNS, 'text');
+            txt.setAttribute('x', x + w/2); txt.setAttribute('y', y + h/2 + 4);
+            txt.setAttribute('text-anchor','middle');
+            txt.setAttribute('fill', damage[key] ? '#fff' : 'rgba(232,240,248,0.85)');
+            txt.setAttribute('font-family', 'Rajdhani, sans-serif');
+            txt.setAttribute('font-size', '11');
+            txt.setAttribute('font-weight', '600');
+            txt.setAttribute('letter-spacing', '0.5');
+            txt.textContent = label;
+            svg.appendChild(txt);
+        }
+    }
+    function circle(cx,cy,r, key, label){
+        var c = document.createElementNS(svgNS, 'circle');
+        c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
+        c.setAttribute('fill', partColor(key));
+        c.setAttribute('fill-opacity', partOpacity(key));
+        c.setAttribute('stroke', partStroke(key));
+        c.setAttribute('stroke-width', damage[key] ? 2 : 1);
+        if(damage[key]) {
+            var anim = document.createElementNS(svgNS, 'animate');
+            anim.setAttribute('attributeName', 'r');
+            anim.setAttribute('values', r+';'+(r+3)+';'+r);
+            anim.setAttribute('dur', '1.5s');
+            anim.setAttribute('repeatCount', 'indefinite');
+            c.appendChild(anim);
+        }
+        svg.appendChild(c);
+    }
+
+    /* Car layout (top-down). Car is horizontal, front at right.
+       width 460 (x=70 .. 530), height 200 (y=60 .. 260). */
+
+    // Main body outline (cabin + hood + trunk visible as one)
+    zone(70, 70, 460, 180, '_body', '', 'body', 26);
+
+    // Hood
+    zone(390, 75, 130, 80, 'hood', 'HOOD', 'paint');
+    // Trunk
+    zone(80, 75, 110, 80, '_trunk', 'TRUNK', 'paint');
+    // Cabin (centre top half)
+    zone(195, 75, 190, 80, '_cabin', '', 'paint');
+    // Windshield (front of cabin)
+    zone(360, 80, 30, 70, 'windshield', '', 'paint');
+    // Rear window
+    zone(190, 80, 30, 70, 'rear_window', '', 'paint');
+    // Front bumper
+    zone(520, 100, 14, 120, 'front_bumper', '', 'body');
+    // Rear bumper
+    zone(66, 100, 14, 120, 'rear_bumper', '', 'body');
+
+    // Doors (left/right) — narrow side strips
+    zone(195, 165, 190, 22, 'right_door', 'R DOOR', 'body');
+    zone(195, 133, 190, 22, 'left_door', 'L DOOR', 'body');
+
+    // Fenders — front side panels by wheel arches
+    zone(395, 165, 90, 22, 'right_fender', '', 'body');
+    zone(395, 133, 90, 22, 'left_fender', '', 'body');
+
+    // Headlights
+    circle(525, 95, 6, 'headlights', '');
+    circle(525, 225, 6, 'headlights', '');
+    // Taillights
+    circle(75, 95, 5, 'taillights', '');
+    circle(75, 225, 5, 'taillights', '');
+
+    // Mirrors
+    zone(355, 50, 22, 12, 'left_mirror', '', undefined);
+    zone(355, 258, 22, 12, 'right_mirror', '', undefined);
+
+    // Wheels
+    function wheelRect(cx,cy){
+        var w = 30, h = 20;
+        var r = document.createElementNS(svgNS, 'rect');
+        r.setAttribute('x', cx - w/2); r.setAttribute('y', cy - h/2);
+        r.setAttribute('width', w); r.setAttribute('height', h);
+        r.setAttribute('rx', 4);
+        r.setAttribute('fill', damage['wheels'] ? '#ff4d6d' : '#0a0d14');
+        r.setAttribute('stroke', damage['wheels'] ? '#ff4d6d' : 'rgba(154,168,188,0.5)');
+        r.setAttribute('stroke-width', '1.5');
+        if(damage['wheels']) {
+            var anim = document.createElementNS(svgNS, 'animate');
+            anim.setAttribute('attributeName', 'opacity');
+            anim.setAttribute('values', '1;0.5;1');
+            anim.setAttribute('dur', '1.5s');
+            anim.setAttribute('repeatCount', 'indefinite');
+            r.appendChild(anim);
+        }
+        svg.appendChild(r);
+    }
+    wheelRect(440, 55); wheelRect(440, 265);
+    wheelRect(150, 55); wheelRect(150, 265);
+
+    // Center line
+    var cl = document.createElementNS(svgNS, 'line');
+    cl.setAttribute('x1', 90); cl.setAttribute('y1', 160);
+    cl.setAttribute('x2', 510); cl.setAttribute('y2', 160);
+    cl.setAttribute('stroke', 'rgba(0,210,255,0.18)');
+    cl.setAttribute('stroke-dasharray', '4 5');
+    cl.setAttribute('stroke-width', '1');
+    svg.appendChild(cl);
+
+    // Front arrow
+    var arrow = document.createElementNS(svgNS, 'polygon');
+    arrow.setAttribute('points', '545,150 560,160 545,170');
+    arrow.setAttribute('fill', 'rgba(0,210,255,0.5)');
+    svg.appendChild(arrow);
+
+    var ft = document.createElementNS(svgNS, 'text');
+    ft.setAttribute('x', '562'); ft.setAttribute('y', '163');
+    ft.setAttribute('fill', 'rgba(0,210,255,0.7)');
+    ft.setAttribute('font-family', 'Rajdhani, sans-serif');
+    ft.setAttribute('font-size', '10'); ft.setAttribute('font-weight', '700');
+    ft.textContent = '→';
+    svg.appendChild(ft);
+
+    container.appendChild(svg);
+};
+
+})();
+</script>

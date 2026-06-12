@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    /* ── Mode tabs ── */
+    .mode-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:22px; }
+    .mode-tab { padding:11px 14px; text-align:center; border-radius:8px; cursor:pointer; font-family:var(--font-d); font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); transition:all 0.25s; user-select:none; border:1px solid transparent; position:relative; }
+    .mode-tab:hover { color:var(--text); }
+    .mode-tab.active { color:var(--bg); background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 4px 18px rgba(0,210,255,0.25); }
+    .mode-tab.active.detailed { background:linear-gradient(135deg,var(--accent4),#7c3aed); box-shadow:0 4px 18px rgba(168,85,247,0.28); }
+    .mode-tab .tab-num { font-size:9px; opacity:0.7; display:block; line-height:1; margin-bottom:3px; letter-spacing:0.1em; }
+
+    /* ── Vehicle source toggle ── */
+    .vs-toggle { display:flex; gap:4px; padding:4px; background:var(--surface2); border:1px solid var(--border); border-radius:24px; margin-bottom:10px; max-width:380px; }
+    .vs-opt { flex:1; padding:8px 12px; text-align:center; border-radius:20px; cursor:pointer; font-family:var(--font-d); font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); transition:all 0.2s; user-select:none; }
+    .vs-opt:hover { color:var(--text); }
+    .vs-opt.active { background:rgba(0,210,255,0.12); color:var(--accent); border:1px solid rgba(0,210,255,0.3); }
+
+    .vs-input { display:none; margin-bottom:18px; }
+    .vs-input.active { display:block; animation: fade-in-up 0.3s ease; }
+    @keyframes fade-in-up { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Detailed fields ── */
+    .detail-section { display:none; }
+    .detail-section.active { display:block; animation: fade-in-up 0.35s ease; }
+    .detail-section h3 { font-size:13px; margin:10px 0 14px; color:var(--accent); display:flex; align-items:center; gap:8px; }
+    .detail-section h3::before { content:''; display:block; width:18px; height:1px; background:var(--accent); }
+    .detail-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:14px; }
+    @media(max-width:540px){ .detail-grid { grid-template-columns:1fr; gap:10px; } }
+    .field { margin-bottom:0; }
+    .field label { display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; font-family:var(--font-d); }
+
+    /* ── Upload zone (kept from v2) ── */
+    .upload-zone { border:2px dashed rgba(0,210,255,0.2); border-radius:var(--radius); padding:40px 20px; text-align:center; cursor:pointer; transition:all 0.3s; background:var(--surface2); margin-bottom:16px; position:relative; overflow:hidden; }
+    .upload-zone:hover,.upload-zone.drag-over { border-color:var(--accent); background:rgba(0,210,255,0.04); box-shadow:0 0 28px rgba(0,210,255,0.07),inset 0 0 28px rgba(0,210,255,0.03); }
+    .upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .upload-icon-wrap { width:64px; height:64px; margin:0 auto 16px; background:linear-gradient(135deg,rgba(0,210,255,0.12),rgba(0,153,204,0.06)); border:1px solid rgba(0,210,255,0.2); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px; transition:all 0.3s; }
+    .upload-zone:hover .upload-icon-wrap { transform:translateY(-4px); box-shadow:0 8px 22px rgba(0,210,255,0.18); border-color:rgba(0,210,255,0.4); }
+    .upload-title { font-family:var(--font-d); font-size:15px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--text); margin-bottom:6px; }
+    .upload-formats { color:var(--muted2); font-size:11px; font-family:var(--font-d); letter-spacing:0.05em; text-transform:uppercase; margin-top:4px; }
+    @media(max-width:480px) { .upload-zone { padding:28px 16px; } .upload-icon-wrap { width:52px; height:52px; font-size:22px; } }
+
+    .preview-box { display:none; margin-bottom:16px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); position:relative; }
+    .preview-box img { width:100%; max-height:260px; object-fit:cover; display:block; border-radius:0; }
+    @media(max-width:480px) { .preview-box img { max-height:180px; } }
+    .preview-label { position:absolute; top:10px; left:10px; background:rgba(7,10,18,0.85); color:var(--accent); font-size:11px; font-weight:700; padding:4px 11px; border-radius:20px; border:1px solid rgba(0,210,255,0.3); backdrop-filter:blur(8px); font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; }
+
+    /* Form error */
+    .form-error { background:rgba(255,77,109,0.08); border:1px solid rgba(255,77,109,0.3); color:#ff8fa3; font-size:13px; padding:10px 14px; border-radius:var(--radius-sm); margin-bottom:14px; }
+
+    /* ── Loading overlay ── */
+    .loading-overlay { display:none; position:fixed; inset:0; background:rgba(7,10,18,0.96); backdrop-filter:blur(20px); z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:20px; }
+    .loading-overlay.active { display:flex; animation:fade-in 0.35s ease; }
+    @keyframes fade-in { from{opacity:0} to{opacity:1} }
+
+    .scanner { position:relative; width:160px; height:160px; flex-shrink:0; }
+    @media(max-width:420px) { .scanner { width:120px; height:120px; } }
+    .s-ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid transparent; }
+    .s-ring.r1 { border-top-color:var(--accent); animation:spin 1.2s linear infinite; }
+    .s-ring.r2 { inset:16px; border-right-color:rgba(0,255,179,0.6); animation:spin 2s linear infinite reverse; }
+    .s-ring.r3 { inset:32px; border-top-color:rgba(0,210,255,0.4); border-bottom-color:rgba(0,210,255,0.4); animation:spin 3s linear infinite; }
+    .s-ring.r4 { inset:46px; border-left-color:rgba(255,201,60,0.3); animation:spin 1.8s linear infinite reverse; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .s-core { position:absolute; inset:56px; background:radial-gradient(circle,rgba(0,210,255,0.15),rgba(0,210,255,0.04)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; animation:core-pulse 2s ease-in-out infinite; }
+    @media(max-width:420px) { .s-core { inset:40px; font-size:18px; } }
+    @keyframes core-pulse { 0%,100%{transform:scale(1);opacity:0.8} 50%{transform:scale(1.08);opacity:1} }
+    .s-beam { position:absolute; inset:0; border-radius:50%; overflow:hidden; }
+    .s-beam::after { content:''; position:absolute; top:50%; left:50%; width:50%; height:1px; background:linear-gradient(90deg,rgba(0,210,255,0.8),transparent); transform-origin:0 0; animation:beam 1.2s linear infinite; }
+    @keyframes beam { to{transform:rotate(360deg)} }
+
+    .loading-title { font-family:var(--font-d); font-size:18px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text); text-align:center; }
+    @media(max-width:420px) { .loading-title { font-size:15px; } }
+
+    .loading-steps { display:flex; flex-direction:column; gap:10px; width:100%; max-width:280px; }
+    .step { display:flex; align-items:center; gap:10px; font-size:12px; font-family:var(--font-d); letter-spacing:0.04em; color:var(--muted); opacity:0.35; transition:all 0.4s; }
+    .step.active { color:var(--accent); opacity:1; }
+    .step.done { color:var(--success); opacity:0.75; }
+    .step-indicator { width:26px; height:26px; border-radius:50%; border:1px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; font-family:var(--font-d); font-weight:700; }
+    .step.active .step-indicator { background:rgba(0,210,255,0.1); animation:blink 1s ease infinite; }
+    .step.done .step-indicator { background:rgba(0,255,179,0.1); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .progress-wrap { width:100%; max-width:280px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:10px; font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    .progress-track { width:100%; height:4px; background:var(--surface3); border-radius:4px; overflow:hidden; }
+    .progress-fill { height:100%; border-radius:4px; width:0%; transition:width 0.7s cubic-bezier(0.4,0,0.2,1); background:linear-gradient(90deg,var(--accent),var(--accent3)); box-shadow:0 0 6px rgba(0,210,255,0.4); }
+</style>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="scanner">
+        <div class="s-ring r1"></div><div class="s-ring r2"></div>
+        <div class="s-ring r3"></div><div class="s-ring r4"></div>
+        <div class="s-beam"></div>
+        <div class="s-core">🔍</div>
+    </div>
+    <div class="loading-title" id="overlayTitle">Анализ изображения</div>
+    <div class="loading-steps">
+        <div class="step" id="step1"><div class="step-indicator">01</div><span id="stepText1">Загрузка изображения...</span></div>
+        <div class="step" id="step2"><div class="step-indicator">02</div><span id="stepText2">Распознавание объектов...</span></div>
+        <div class="step" id="step3"><div class="step-indicator">03</div><span id="stepText3">AI-диагностика...</span></div>
+        <div class="step" id="step4"><div class="step-indicator">04</div><span id="stepText4">Формирование отчёта...</span></div>
+    </div>
+    <div class="progress-wrap">
+        <div class="progress-label"><span>Обработка</span><span id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 data-i18n="upload_card_title">Запуск анализа</h2>
+
+    <!-- ── Mode tabs ── -->
+    <div class="mode-tabs" role="tablist">
+        <div class="mode-tab {% if mode == 'simple' %}active{% endif %}" data-mode="simple" role="tab">
+            <span class="tab-num">01</span>
+            <span data-i18n="mode_simple">Простой</span>
+        </div>
+        <div class="mode-tab detailed {% if mode == 'detailed' %}active{% endif %}" data-mode="detailed" role="tab">
+            <span class="tab-num">02</span>
+            <span data-i18n="mode_detailed">Детальный</span>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+        <input type="hidden" name="language" id="langInput" value="ru">
+        <input type="hidden" name="mode" id="modeInput" value="{{ mode|default:'simple' }}">
+
+        {% if form.non_field_errors %}
+            <div class="form-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- ── Vehicle source: pick from list OR type your own ── -->
+        <div style="margin-bottom:6px;">
+            <label data-i18n="vehicle_source_label">Транспортное средство</label>
+            <div class="vs-toggle">
+                <div class="vs-opt active" data-vs="pick" data-i18n="vehicle_pick">Выбрать из списка</div>
+                <div class="vs-opt" data-vs="type" data-i18n="vehicle_type">Ввести свой</div>
+            </div>
+        </div>
+
+        <div class="vs-input active" id="vsPickWrap">
+            {{ form.vehicle }}
+        </div>
+        <div class="vs-input" id="vsTypeWrap">
+            <input type="text" name="custom_vehicle" id="id_custom_vehicle"
+                   value="{{ form.custom_vehicle.value|default:'' }}"
+                   data-i18n-placeholder="vehicle_typed_placeholder"
+                   placeholder="Например: Chevrolet Cobalt 2018">
+        </div>
+
+        <!-- ── Image upload ── -->
+        <div class="upload-zone" id="uploadArea">
+            <div class="upload-icon-wrap">📷</div>
+            <div class="upload-title" data-i18n="upload_drag">Перетащите фото или нажмите для выбора</div>
+            <div class="upload-formats" data-i18n="upload_formats">JPG, PNG, WEBP до 10 МБ</div>
+            {{ form.image }}
+        </div>
+        <div class="preview-box" id="previewBox">
+            <img id="previewImg" src="" alt="preview">
+            <span class="preview-label" data-i18n="upload_preview">Предпросмотр</span>
+        </div>
+
+        <!-- ── Detailed mode: extra fields ── -->
+        <div class="detail-section" id="detailSection">
+            <div class="detail-grid">
+                <div class="field"><label for="id_brand" data-i18n="label_brand">Бренд</label>{{ form.brand }}</div>
+                <div class="field"><label for="id_model_name" data-i18n="label_model">Модель</label>{{ form.model_name }}</div>
+                <div class="field"><label for="id_year" data-i18n="label_year">Год выпуска</label>{{ form.year }}</div>
+                <div class="field"><label for="id_color" data-i18n="label_color">Цвет</label>{{ form.color }}</div>
+                <div class="field"><label for="id_mileage" data-i18n="label_mileage">Пробег (км)</label>{{ form.mileage }}</div>
+                <div class="field"><label for="id_fuel_type" data-i18n="label_fuel">Топливо</label>{{ form.fuel_type }}</div>
+                <div class="field" style="grid-column:1/-1;"><label for="id_transmission" data-i18n="label_transmission">Трансмиссия</label>{{ form.transmission }}</div>
+            </div>
+            <div class="field" style="margin-bottom:14px;">
+                <label for="id_additional_info" data-i18n="label_extra">Салон и дополнительные данные</label>
+                <textarea name="additional_info" id="id_additional_info" rows="4"
+                          data-i18n-placeholder="extra_placeholder"
+                          placeholder="Состояние салона, известные дефекты, опции комплектации и другие подробности...">{{ form.additional_info.value|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="margin-top:6px;">
+            🔍 <span data-i18n="upload_submit">Анализировать</span>
+        </button>
+    </form>
+</div>
+
+<script>
+(function(){
+    var modeInput = document.getElementById('modeInput');
+    var detailSection = document.getElementById('detailSection');
+    var modeTabs = document.querySelectorAll('.mode-tab');
+
+    function setMode(mode){
+        modeInput.value = mode;
+        modeTabs.forEach(function(t){
+            t.classList.toggle('active', t.getAttribute('data-mode') === mode);
+        });
+        if(mode === 'detailed'){
+            detailSection.classList.add('active');
+        } else {
+            detailSection.classList.remove('active');
+        }
+        try {
+            var u = new URL(window.location);
+            u.searchParams.set('mode', mode);
+            window.history.replaceState({}, '', u);
+        } catch(e){}
+    }
+    modeTabs.forEach(function(t){
+        t.addEventListener('click', function(){ setMode(t.getAttribute('data-mode')); });
+    });
+    setMode(modeInput.value || 'simple');
+
+    // ── Vehicle source toggle ──
+    var vsOpts = document.querySelectorAll('.vs-opt');
+    var vsPickWrap = document.getElementById('vsPickWrap');
+    var vsTypeWrap = document.getElementById('vsTypeWrap');
+    var vsPickSel = vsPickWrap.querySelector('select');
+    var vsTypeInp = document.getElementById('id_custom_vehicle');
+
+    function setSource(src){
+        vsOpts.forEach(function(o){
+            o.classList.toggle('active', o.getAttribute('data-vs') === src);
+        });
+        if(src === 'pick'){
+            vsPickWrap.classList.add('active');
+            vsTypeWrap.classList.remove('active');
+            if(vsTypeInp) vsTypeInp.value = '';
+        } else {
+            vsTypeWrap.classList.add('active');
+            vsPickWrap.classList.remove('active');
+            if(vsPickSel) vsPickSel.value = '';
+        }
+    }
+    vsOpts.forEach(function(o){
+        o.addEventListener('click', function(){ setSource(o.getAttribute('data-vs')); });
+    });
+    // If the form had a custom vehicle pre-filled (e.g. form error), default to type tab
+    if(vsTypeInp && vsTypeInp.value && vsTypeInp.value.trim().length > 0){
+        setSource('type');
+    } else {
+        setSource('pick');
+    }
+
+    // ── Image upload + preview ──
+    var fileInput = document.querySelector('input[type="file"]');
+    var previewBox = document.getElementById('previewBox');
+    var previewImg = document.getElementById('previewImg');
+    var uploadArea = document.getElementById('uploadArea');
+    var uploadForm = document.getElementById('uploadForm');
+    var loadingOverlay = document.getElementById('loadingOverlay');
+    var progressFill = document.getElementById('progressFill');
+    var progressPct = document.getElementById('progressPct');
+    var langInput = document.getElementById('langInput');
+    langInput.value = getCookie('lang') || 'ru';
+
+    if(fileInput){
+        fileInput.addEventListener('change', function(){
+            var file = fileInput.files[0]; if(!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e){ previewImg.src = e.target.result; previewBox.style.display = 'block'; };
+            reader.readAsDataURL(file);
+        });
+    }
+    uploadArea.addEventListener('dragover', function(e){ e.preventDefault(); uploadArea.classList.add('drag-over'); });
+    uploadArea.addEventListener('dragleave', function(){ uploadArea.classList.remove('drag-over'); });
+    uploadArea.addEventListener('drop', function(e){
+        e.preventDefault(); uploadArea.classList.remove('drag-over');
+        var file = e.dataTransfer.files[0];
+        if(file){ var dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files; fileInput.dispatchEvent(new Event('change')); }
+    });
+    uploadForm.addEventListener('submit', function(){
+        var lang = getCookie('lang') || 'ru'; langInput.value = lang;
+        var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
+        document.getElementById('overlayTitle').textContent = t.upload_analyzing || 'Анализ';
+        document.getElementById('stepText1').textContent = t.upload_step1 || 'Загрузка...';
+        document.getElementById('stepText2').textContent = t.upload_step2 || 'Распознавание...';
+        document.getElementById('stepText3').textContent = t.upload_step3 || 'AI...';
+        document.getElementById('stepText4').textContent = t.upload_step4 || 'Отчёт...';
+        loadingOverlay.classList.add('active');
+        var steps = [
+            { el: document.getElementById('step1'), delay:0,    progress:20 },
+            { el: document.getElementById('step2'), delay:1200, progress:45 },
+            { el: document.getElementById('step3'), delay:3200, progress:72 },
+            { el: document.getElementById('step4'), delay:5800, progress:92 },
+        ];
+        steps.forEach(function(s){ s.el.className = 'step'; });
+        steps.forEach(function(s, i){
+            setTimeout(function(){
+                if(i > 0) steps[i-1].el.className = 'step done';
+                s.el.className = 'step active';
+                progressFill.style.width = s.progress + '%';
+                progressPct.textContent = s.progress + '%';
+            }, s.delay);
+        });
+    });
+})();
+</script>
+{% endblock %}

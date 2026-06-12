@@ -1,0 +1,366 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#070a12">
+    <title>AI Transport — Vehicle Diagnostics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
+    <style>
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --bg:#070a12; --surface:#0d1220; --surface2:#121929; --surface3:#1a2438;
+            --border:rgba(255,255,255,0.06); --border-strong:rgba(255,255,255,0.10);
+            --border-glow:rgba(0,210,255,0.35);
+            --accent:#00d2ff; --accent2:#0099cc; --accent3:#00ffb3; --accent4:#a855f7;
+            --text:#e8f0f8; --muted:#6b7d94; --muted2:#3d4f66;
+            --success:#00ffb3; --warning:#ffc93c; --danger:#ff4d6d;
+            --radius:16px; --radius-sm:10px;
+            --font-d:'Rajdhani',sans-serif; --font-b:'DM Sans',sans-serif; --font-m:'JetBrains Mono',monospace;
+        }
+        html { scroll-behavior:smooth; }
+        body { background:var(--bg); color:var(--text); font-family:var(--font-b); font-size:15px; line-height:1.6; min-height:100vh; overflow-x:hidden; }
+
+        /* ── Background ── */
+        .bg-layer { position:fixed; inset:0; pointer-events:none; z-index:0; }
+        .bg-grid { background-image:linear-gradient(rgba(0,210,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.025) 1px,transparent 1px); background-size:48px 48px; }
+        .bg-g1 { background:radial-gradient(ellipse 700px 500px at 90% -10%,rgba(0,153,204,0.12) 0%,transparent 70%); animation:gd1 18s ease-in-out infinite alternate; }
+        .bg-g2 { background:radial-gradient(ellipse 500px 400px at -10% 80%,rgba(0,255,179,0.06) 0%,transparent 60%); animation:gd2 24s ease-in-out infinite alternate; }
+        .bg-g3 { background:radial-gradient(ellipse 400px 300px at 50% 50%,rgba(168,85,247,0.04) 0%,transparent 60%); animation:gd1 32s ease-in-out infinite alternate-reverse; }
+        .bg-scan { background:linear-gradient(transparent 0%,rgba(0,210,255,0.012) 50%,transparent 100%); background-size:100% 200px; animation:scan 10s linear infinite; }
+        @keyframes gd1 { from{transform:translate(0,0)} to{transform:translate(-80px,60px)} }
+        @keyframes gd2 { from{transform:translate(0,0)} to{transform:translate(60px,-40px)} }
+        @keyframes scan { from{background-position:0 -200px} to{background-position:0 110vh} }
+
+        /* ── Navbar ── */
+        .navbar {
+            position:sticky; top:0; z-index:200;
+            background:rgba(7,10,18,0.92); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%);
+            border-bottom:1px solid var(--border);
+            padding:0 28px; height:60px;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .navbar::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,210,255,0.25),transparent); }
+        .navbar-brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text); z-index:1; }
+        .brand-icon { width:34px; height:34px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 0 16px rgba(0,210,255,0.3); flex-shrink:0; position:relative; overflow:hidden; }
+        .brand-icon::after { content:''; position:absolute; inset:0; background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.4) 50%,transparent 70%); animation:brand-shimmer 4s ease-in-out infinite; }
+        @keyframes brand-shimmer { 0%,90%,100% { transform:translateX(-100%); } 50% { transform:translateX(100%); } }
+        .brand-name { font-family:var(--font-d); font-size:19px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; }
+        .brand-name span { color:var(--accent); }
+
+        /* Desktop nav links */
+        .nav-links { display:flex; align-items:center; gap:4px; }
+        .nav-links a { text-decoration:none; color:var(--muted); padding:7px 14px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; transition:all 0.2s; border:1px solid transparent; white-space:nowrap; }
+        .nav-links a:hover { color:var(--text); background:var(--surface2); border-color:var(--border); }
+        .nav-links a.btn-nav { color:var(--accent); border-color:rgba(0,210,255,0.3); background:rgba(0,210,255,0.05); font-family:var(--font-d); font-weight:600; letter-spacing:0.05em; text-transform:uppercase; font-size:12px; }
+        .nav-links a.btn-nav:hover { background:rgba(0,210,255,0.12); border-color:var(--accent); }
+        .lang-switcher { display:flex; align-items:center; gap:2px; background:var(--surface2); border:1px solid var(--border); border-radius:24px; padding:3px; margin-left:8px; }
+        .lang-btn { background:none; border:none; color:var(--muted); font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; cursor:pointer; transition:all 0.2s; letter-spacing:0.06em; font-family:var(--font-d); }
+        .lang-btn:hover { color:var(--text); }
+        .lang-btn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--bg); }
+
+        /* Hamburger button */
+        .nav-toggle { display:none; flex-direction:column; justify-content:center; gap:5px; width:36px; height:36px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; cursor:pointer; padding:8px; z-index:201; flex-shrink:0; }
+        .nav-toggle span { display:block; height:2px; background:var(--text); border-radius:2px; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .nav-toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+        .nav-toggle.open span:nth-child(2) { opacity:0; transform:scaleX(0); }
+        .nav-toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+
+        /* Mobile nav drawer */
+        @media(max-width:760px) {
+            .navbar { padding:0 16px; }
+            .nav-toggle { display:flex; }
+            .nav-links {
+                display:none; flex-direction:column; align-items:stretch; gap:6px;
+                position:fixed; top:60px; left:0; right:0;
+                background:rgba(7,10,18,0.97); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+                border-bottom:1px solid var(--border);
+                padding:16px; z-index:199;
+                animation:drawer-in 0.25s cubic-bezier(0.16,1,0.3,1);
+                max-height:calc(100vh - 60px); overflow-y:auto;
+            }
+            .nav-links.open { display:flex; }
+            @keyframes drawer-in { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+            .nav-links a { padding:12px 16px; font-size:14px; border:1px solid var(--border); }
+            .nav-links a.btn-nav { text-align:center; justify-content:center; }
+            .lang-switcher { margin:4px 0 0; justify-content:center; }
+        }
+
+        /* ── Layout ── */
+        .container { position:relative; z-index:1; max-width:1180px; margin:32px auto; padding:0 20px; animation:page-in 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+        .container.narrow { max-width:920px; }
+        @media(max-width:640px) { .container { margin:20px auto; padding:0 14px; } }
+        @keyframes page-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ── Cards ── */
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; position:relative; overflow:hidden; animation:card-in 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent); }
+        .card:nth-child(2){animation-delay:0.08s} .card:nth-child(3){animation-delay:0.16s}
+        @keyframes card-in { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @media(max-width:640px) { .card { padding:18px; border-radius:12px; } }
+
+        /* ── Typography ── */
+        h1 { font-family:var(--font-d); font-size:48px; font-weight:700; line-height:1.05; letter-spacing:-0.01em; }
+        h1 .accent { background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        h2 { font-family:var(--font-d); font-size:22px; font-weight:700; color:var(--text); margin-bottom:20px; letter-spacing:0.03em; text-transform:uppercase; }
+        h2 .accent { color:var(--accent); }
+        h3 { font-family:var(--font-d); font-size:16px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text); }
+        @media(max-width:760px) { h1 { font-size:34px; } h2 { font-size:18px; margin-bottom:16px; } }
+        @media(max-width:420px) { h1 { font-size:28px; } }
+
+        /* ── Buttons ── */
+        .btn { display:inline-flex; align-items:center; gap:7px; padding:11px 22px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.25s; text-decoration:none; border:none; font-family:var(--font-d); letter-spacing:0.06em; text-transform:uppercase; position:relative; overflow:hidden; }
+        .btn::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(120deg,transparent,rgba(255,255,255,0.15),transparent); transition:left 0.4s; }
+        .btn:hover::before { left:140%; }
+        .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:var(--bg); box-shadow:0 4px 20px rgba(0,210,255,0.25); }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,210,255,0.4); }
+        .btn-primary:active { transform:translateY(0); }
+        .btn-outline { background:transparent; color:var(--accent); border:1px solid rgba(0,210,255,0.35); }
+        .btn-outline:hover { background:rgba(0,210,255,0.08); border-color:var(--accent); }
+        .btn-ghost { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+        .btn-ghost:hover { border-color:var(--border-strong); background:var(--surface3); }
+        @media(max-width:640px) { .btn { padding:10px 16px; font-size:12px; } }
+
+        /* ── Forms ── */
+        input[type="text"],input[type="password"],input[type="email"],input[type="number"],select,textarea {
+            width:100%; padding:11px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:14px; font-family:var(--font-b); outline:none; transition:all 0.2s;
+        }
+        textarea { resize:vertical; min-height:80px; font-family:var(--font-b); }
+        input:focus,select:focus,textarea:focus { border-color:var(--accent); background:rgba(0,210,255,0.04); box-shadow:0 0 0 3px rgba(0,210,255,0.08); }
+        label { display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; font-family:var(--font-d); }
+
+        ul { list-style:none; }
+        a.link { color:var(--accent); text-decoration:none; font-size:13px; font-weight:500; }
+        a.link:hover { text-decoration:underline; }
+        img { border-radius:var(--radius-sm); }
+        .badge { display:inline-flex; align-items:center; background:rgba(0,255,179,0.1); color:var(--success); padding:3px 12px; border-radius:20px; font-size:12px; font-weight:500; border:1px solid rgba(0,255,179,0.2); }
+        ::-webkit-scrollbar{width:5px;background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+
+        .vis-canvas-wrap { position:relative; width:100%; aspect-ratio:16/10; border-radius:var(--radius); overflow:hidden; background:radial-gradient(ellipse at center, rgba(0,210,255,0.07), transparent 70%), var(--surface2); border:1px solid var(--border); }
+        .vis-canvas-wrap canvas { display:block; width:100% !important; height:100% !important; }
+        @media(max-width:640px) { .vis-canvas-wrap { aspect-ratio:4/3; } }
+
+        .chip { display:inline-flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); padding:5px 12px; border-radius:20px; font-size:11px; color:var(--muted); font-family:var(--font-d); font-weight:600; letter-spacing:0.06em; text-transform:uppercase; }
+        .chip .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px var(--accent); animation:dot-pulse 1.6s ease-in-out infinite; }
+        @keyframes dot-pulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.5; transform:scale(0.85)} }
+    </style>
+
+    <script>
+    function getCookie(name){var m=document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));return m?decodeURIComponent(m[1]):null;}
+    function setCookie(name,value,days){var e=new Date(Date.now()+days*864e5).toUTCString();document.cookie=name+'='+encodeURIComponent(value)+'; expires='+e+'; path=/';}
+
+    var TRANSLATIONS = {
+      uz:{
+        nav_home:'Bosh sahifa', nav_dashboard:'Tekshirishlar', nav_check:'+ Tekshirish', nav_logout:'Chiqish', nav_login:'Kirish', nav_register:"Ro'yxat",
+        home_hero_title:'Avtomobil diagnostikasi', home_hero_accent:"Sun'iy intellekt bilan",
+        home_hero_sub:'Rasm yuklang, batafsil tahlil va 3D vizualizatsiyani bir necha soniyada oling.',
+        home_cta_start:'Boshlash', home_cta_learn:'Imkoniyatlar',
+        home_stat1:'Tahlil rejimi', home_stat2:"Kuzatuv nuqtalari", home_stat3:'Til',
+        home_features_title:'Asosiy imkoniyatlar', home_features_sub:'Bizning tizim qanday ishlaydi',
+        feat1_title:'Tezkor tahlil', feat1_text:"Bitta rasm bilan asosiy ko'rsatkichlar.",
+        feat2_title:'Batafsil rejim', feat2_text:"Marka, yil, probeg va salon ma'lumotlari bilan chuqurroq xulosa.",
+        feat3_title:'3D vizualizatsiya', feat3_text:'Aniqlangan zonalar 3D modelda yoritiladi.',
+        feat4_title:"Ko'p tilli", feat4_text:'O\u02BBzbek, rus va ingliz tillarida hisobot.',
+        home_pipeline_title:'Pipeline', home_pipeline_sub:"Yuklashdan natijagacha bo'lgan yo'l",
+        home_stage1:'Yuklash', home_stage2:'Aniqlash', home_stage3:'Vision AI', home_stage4:'3D xarita', home_stage5:'Hisobot',
+        home_modes_title:'Ikki rejim', home_modes_sub:'O\u02BBzingizga qulayini tanlang',
+        mode_simple_title:'Oddiy', mode_simple_desc:"Transport nomi va rasm — natija matn ko'rinishida.",
+        mode_detail_title:'Batafsil', mode_detail_desc:'Brend, model, yil va salon — kengaytirilgan hisobot.',
+        mode_try_simple:'Oddiy rejim', mode_try_detail:'Batafsil rejim',
+        home_view_dashboard:'Tekshirishlarni ochish',
+        index_title:'Tekshirishlar', index_new:'+ Yangi tekshiruv', index_empty_title:"Hali tekshirishlar yo'q", index_empty_sub:'Tahlil qilish uchun avtomobil rasmini yuklang', index_start:'Tekshirishni boshlash',
+        upload_card_title:'Tahlil yuklash', upload_analyzing:'Tasvir tahlil qilinmoqda',
+        upload_step1:'Rasm yuklanmoqda...', upload_step2:'Obyektlar aniqlanmoqda...', upload_step3:'AI diagnostika...', upload_step4:'Hisobot tayyorlanmoqda...',
+        upload_drag:"Rasmni shu yerga torting yoki tanlash uchun bosing", upload_formats:'JPG, PNG, WEBP — 10 MBgacha', upload_preview:"Ko'rinish", upload_submit:'Tahlil qilish',
+        mode_label:'Tahlil rejimi', mode_simple:'Oddiy', mode_detailed:'Batafsil',
+        vehicle_source_label:'Transport vositasi', vehicle_pick:"Ro'yxatdan tanlash", vehicle_type:"O'zim yozaman", vehicle_typed_placeholder:'Masalan: Chevrolet Cobalt 2018',
+        label_brand:'Brend', label_model:'Model', label_year:'Yil', label_color:'Rang', label_mileage:'Probeg (km)', label_fuel:"Yoqilg'i", label_transmission:'Uzatma', label_extra:"Salon va qo'shimcha tafsilotlar",
+        extra_placeholder:"Salon holati, mavjud nuqsonlar, jihozlar va boshqa tafsilotlar...",
+        label_username:'Foydalanuvchi nomi', label_password:'Parol', label_password1:'Parol', label_password2:'Parolni tasdiqlang',
+        result_heading:'Tahlil', result_heading2:'natijasi', result_back:'← Orqaga',
+        result_ai_conf:'AI ishonchliligi', result_ai_title:'AI-Diagnostika', result_ai_sub:'Claude Vision', result_conf_label:'Model ishonchliligi', result_done:'Tahlil yakunlandi', result_new:'Yangi tekshiruv',
+        result_conf_low:'% — past', result_conf_mid:"% — o'rta", result_conf_high:'% — yuqori',
+        result_3d_title:"3D ko'rinish", result_3d_sub:'Zararlangan qismlar yoritilgan',
+        result_schema_title:'Sxematik xarita', result_schema_sub:"Tepadan ko'rinish",
+        result_metrics_title:'Komponentlar holati',
+        m_body:'Tana', m_paint:"Bo'yoq", m_tires:"G'ildiraklar", m_lights:'Chiroqlar', m_windows:'Oynalar', m_frame:'Ramka', m_interior:'Salon', m_engine:'Dvigatel (taxminan)', m_age:'Yosh bahosi', m_maint:"Xizmat ko'rsatish",
+        severity_none:"Shikastlar yo'q", severity_minor:'Kichik shikastlar', severity_moderate:"O'rtacha shikastlar", severity_severe:'Jiddiy shikastlar',
+        damage_legend_ok:"Sog'lom", damage_legend_warn:'Diqqat', damage_legend_bad:'Shikast',
+        login_title:'Kirish', login_btn:'Kirish', login_no_account:"Akkount yo'qmi?", login_register:"Ro'yxatdan o'tish",
+        reg_title:"Ro'yxatdan o'tish", reg_btn:'Hisob yaratish', reg_have_account:'Allaqachon hisobingiz bormi?', reg_login:'Kirish'
+      },
+      ru:{
+        nav_home:'Главная', nav_dashboard:'Проверки', nav_check:'+ Проверка', nav_logout:'Выйти', nav_login:'Войти', nav_register:'Регистрация',
+        home_hero_title:'Диагностика транспорта', home_hero_accent:'на базе ИИ',
+        home_hero_sub:'Загрузите фото — получите детальный отчёт и интерактивную 3D-визуализацию за секунды.',
+        home_cta_start:'Начать', home_cta_learn:'Возможности',
+        home_stat1:'Режима анализа', home_stat2:'Контрольных точек', home_stat3:'Языка',
+        home_features_title:'Ключевые возможности', home_features_sub:'Что умеет система',
+        feat1_title:'Быстрый скан', feat1_text:'Только фото и название — основные показатели.',
+        feat2_title:'Детальный режим', feat2_text:'Марка, год, пробег и салон — расширенный отчёт.',
+        feat3_title:'3D визуализация', feat3_text:'Обнаруженные дефекты подсвечиваются на 3D модели.',
+        feat4_title:'Мультиязычность', feat4_text:'Отчёт на узбекском, русском или английском.',
+        home_pipeline_title:'Pipeline', home_pipeline_sub:'Путь от загрузки до результата',
+        home_stage1:'Загрузка', home_stage2:'Распознавание', home_stage3:'Vision AI', home_stage4:'3D карта', home_stage5:'Отчёт',
+        home_modes_title:'Два режима', home_modes_sub:'Выберите удобный',
+        mode_simple_title:'Простой', mode_simple_desc:'Название транспорта + фото — результат в виде текста.',
+        mode_detail_title:'Детальный', mode_detail_desc:'Бренд, модель, год, салон — расширенный отчёт.',
+        mode_try_simple:'Простой режим', mode_try_detail:'Детальный режим',
+        home_view_dashboard:'Перейти к проверкам',
+        index_title:'Проверки', index_new:'+ Новая проверка', index_empty_title:'Проверок пока нет', index_empty_sub:'Загрузите фото автомобиля для анализа', index_start:'Начать проверку',
+        upload_card_title:'Запуск анализа', upload_analyzing:'Анализ изображения',
+        upload_step1:'Загрузка изображения...', upload_step2:'Распознавание объектов...', upload_step3:'AI-диагностика...', upload_step4:'Формирование отчёта...',
+        upload_drag:'Перетащите фото или нажмите для выбора', upload_formats:'JPG, PNG, WEBP до 10 МБ', upload_preview:'Предпросмотр', upload_submit:'Анализировать',
+        mode_label:'Режим анализа', mode_simple:'Простой', mode_detailed:'Детальный',
+        vehicle_source_label:'Транспортное средство', vehicle_pick:'Выбрать из списка', vehicle_type:'Ввести свой', vehicle_typed_placeholder:'Например: Chevrolet Cobalt 2018',
+        label_brand:'Бренд', label_model:'Модель', label_year:'Год выпуска', label_color:'Цвет', label_mileage:'Пробег (км)', label_fuel:'Топливо', label_transmission:'Трансмиссия', label_extra:'Салон и дополнительные данные',
+        extra_placeholder:'Состояние салона, известные дефекты, опции комплектации и другие подробности...',
+        label_username:'Имя пользователя', label_password:'Пароль', label_password1:'Пароль', label_password2:'Подтвердите пароль',
+        result_heading:'Результат', result_heading2:'анализа', result_back:'← Назад',
+        result_ai_conf:'уверенность AI', result_ai_title:'AI-диагностика', result_ai_sub:'Claude Vision', result_conf_label:'Уверенность модели', result_done:'Анализ завершён', result_new:'Новая проверка',
+        result_conf_low:'% — низкая', result_conf_mid:'% — средняя', result_conf_high:'% — высокая',
+        result_3d_title:'3D-обзор', result_3d_sub:'Повреждённые зоны подсвечены',
+        result_schema_title:'Схематическая карта', result_schema_sub:'Вид сверху',
+        result_metrics_title:'Состояние компонентов',
+        m_body:'Кузов', m_paint:'Краска', m_tires:'Шины', m_lights:'Фары', m_windows:'Окна', m_frame:'Рама', m_interior:'Салон', m_engine:'Двигатель (оценка)', m_age:'Оценка возраста', m_maint:'Обслуживание',
+        severity_none:'Без повреждений', severity_minor:'Незначительные', severity_moderate:'Средние повреждения', severity_severe:'Серьёзные повреждения',
+        damage_legend_ok:'Норма', damage_legend_warn:'Внимание', damage_legend_bad:'Повреждение',
+        login_title:'Вход', login_btn:'Войти', login_no_account:'Нет аккаунта?', login_register:'Регистрация',
+        reg_title:'Регистрация', reg_btn:'Создать аккаунт', reg_have_account:'Уже есть аккаунт?', reg_login:'Войти'
+      },
+      en:{
+        nav_home:'Home', nav_dashboard:'Inspections', nav_check:'+ New Check', nav_logout:'Log Out', nav_login:'Sign In', nav_register:'Sign Up',
+        home_hero_title:'Vehicle diagnostics', home_hero_accent:'powered by AI',
+        home_hero_sub:'Upload a photo and get a detailed report plus an interactive 3D visualisation in seconds.',
+        home_cta_start:'Get Started', home_cta_learn:'Features',
+        home_stat1:'Analysis modes', home_stat2:'Inspection points', home_stat3:'Languages',
+        home_features_title:'Key features', home_features_sub:'What the system can do',
+        feat1_title:'Quick scan', feat1_text:'Photo plus vehicle name — core metrics in seconds.',
+        feat2_title:'Detailed mode', feat2_text:'Brand, year, mileage, interior — extended report.',
+        feat3_title:'3D visualisation', feat3_text:'Detected damage is highlighted on a 3D model.',
+        feat4_title:'Multilingual', feat4_text:'Reports in Uzbek, Russian, and English.',
+        home_pipeline_title:'Pipeline', home_pipeline_sub:'From upload to result',
+        home_stage1:'Upload', home_stage2:'Detect', home_stage3:'Vision AI', home_stage4:'3D Map', home_stage5:'Report',
+        home_modes_title:'Two modes', home_modes_sub:'Pick what suits you',
+        mode_simple_title:'Simple', mode_simple_desc:'Just a name and a photo — text result.',
+        mode_detail_title:'Detailed', mode_detail_desc:'Brand, model, year and interior — expanded report.',
+        mode_try_simple:'Simple mode', mode_try_detail:'Detailed mode',
+        home_view_dashboard:'Open inspections',
+        index_title:'Inspections', index_new:'+ New Inspection', index_empty_title:'No inspections yet', index_empty_sub:'Upload a vehicle photo to start analysis', index_start:'Start Inspection',
+        upload_card_title:'Run analysis', upload_analyzing:'Analysing Image',
+        upload_step1:'Uploading image...', upload_step2:'Detecting objects...', upload_step3:'AI diagnostics...', upload_step4:'Generating report...',
+        upload_drag:'Drag & drop a photo or click to browse', upload_formats:'JPG, PNG, WEBP up to 10 MB', upload_preview:'Preview', upload_submit:'Analyse',
+        mode_label:'Analysis mode', mode_simple:'Simple', mode_detailed:'Detailed',
+        vehicle_source_label:'Vehicle', vehicle_pick:'Pick from list', vehicle_type:'Type my own', vehicle_typed_placeholder:'e.g. Chevrolet Cobalt 2018',
+        label_brand:'Brand', label_model:'Model', label_year:'Year', label_color:'Color', label_mileage:'Mileage (km)', label_fuel:'Fuel', label_transmission:'Transmission', label_extra:'Interior & additional details',
+        extra_placeholder:'Interior condition, known defects, equipment options, and any other details...',
+        label_username:'Username', label_password:'Password', label_password1:'Password', label_password2:'Confirm Password',
+        result_heading:'Analysis', result_heading2:'Result', result_back:'← Back',
+        result_ai_conf:'AI confidence', result_ai_title:'AI Diagnostics', result_ai_sub:'Claude Vision', result_conf_label:'Model confidence', result_done:'Analysis complete', result_new:'New Inspection',
+        result_conf_low:'% — low', result_conf_mid:'% — medium', result_conf_high:'% — high',
+        result_3d_title:'3D Overview', result_3d_sub:'Damaged areas highlighted',
+        result_schema_title:'Schematic map', result_schema_sub:'Top-down view',
+        result_metrics_title:'Component state',
+        m_body:'Body', m_paint:'Paint', m_tires:'Tires', m_lights:'Lights', m_windows:'Windows', m_frame:'Frame', m_interior:'Interior', m_engine:'Engine (est.)', m_age:'Age estimate', m_maint:'Maintenance',
+        severity_none:'No damage', severity_minor:'Minor damage', severity_moderate:'Moderate damage', severity_severe:'Severe damage',
+        damage_legend_ok:'OK', damage_legend_warn:'Watch', damage_legend_bad:'Damage',
+        login_title:'Sign In', login_btn:'Sign In', login_no_account:'No account yet?', login_register:'Register',
+        reg_title:'Register', reg_btn:'Create Account', reg_have_account:'Already have an account?', reg_login:'Sign In'
+      }
+    };
+
+    function applyLang(lang){
+      var t = TRANSLATIONS[lang] || TRANSLATIONS['ru'];
+      document.querySelectorAll('[data-i18n]').forEach(function(el){
+        var key = el.getAttribute('data-i18n');
+        if(t[key] === undefined) return;
+        if(el.children.length === 0){
+          el.textContent = t[key];
+        } else {
+          Array.from(el.childNodes).forEach(function(node){
+            if(node.nodeType === 3 && node.textContent.trim()){
+              node.textContent = ' ' + t[key] + ' ';
+            }
+          });
+        }
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+        var key = el.getAttribute('data-i18n-placeholder');
+        if(t[key] !== undefined) el.setAttribute('placeholder', t[key]);
+      });
+      var lm = {
+        'id_username':'label_username','id_password':'label_password',
+        'id_password1':'label_password1','id_password2':'label_password2',
+        'id_vehicle':'vehicle_source_label','id_image':'upload_drag',
+        'id_brand':'label_brand','id_model_name':'label_model','id_year':'label_year',
+        'id_color':'label_color','id_mileage':'label_mileage','id_fuel_type':'label_fuel',
+        'id_transmission':'label_transmission','id_additional_info':'label_extra',
+        'id_custom_vehicle':'vehicle_source_label'
+      };
+      document.querySelectorAll('label[for]').forEach(function(lb){
+        var k = lm[lb.getAttribute('for')];
+        if(k && t[k]) lb.textContent = t[k];
+      });
+      document.querySelectorAll('.lang-btn').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+      });
+      document.documentElement.lang = lang;
+      document.querySelectorAll('input[name="language"]').forEach(function(inp){ inp.value = lang; });
+      document.dispatchEvent(new CustomEvent('langchanged',{ detail:{ lang:lang }}));
+    }
+    function setLang(lang){ setCookie('lang', lang, 365); applyLang(lang); }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      applyLang(getCookie('lang') || 'ru');
+      var toggle = document.getElementById('navToggle');
+      var links  = document.getElementById('navLinks');
+      if(toggle && links){
+        toggle.addEventListener('click', function(){
+          toggle.classList.toggle('open');
+          links.classList.toggle('open');
+        });
+        links.querySelectorAll('a').forEach(function(a){
+          a.addEventListener('click', function(){ toggle.classList.remove('open'); links.classList.remove('open'); });
+        });
+      }
+    });
+    </script>
+</head>
+<body>
+<div class="bg-layer bg-grid"></div>
+<div class="bg-layer bg-g1"></div>
+<div class="bg-layer bg-g2"></div>
+<div class="bg-layer bg-g3"></div>
+<div class="bg-layer bg-scan"></div>
+<nav class="navbar">
+    <a href="{% url 'home' %}" class="navbar-brand">
+        <div class="brand-icon">🚗</div>
+        <span class="brand-name">AI <span>Transport</span></span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+        <a href="{% url 'home' %}" data-i18n="nav_home">Главная</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'index' %}" data-i18n="nav_dashboard">Проверки</a>
+            <a href="{% url 'upload' %}" class="btn-nav" data-i18n="nav_check">+ Проверка</a>
+            <a href="/users/logout/" data-i18n="nav_logout">Выйти</a>
+        {% else %}
+            <a href="/users/login/" data-i18n="nav_login">Войти</a>
+            <a href="/users/register/" class="btn-nav" data-i18n="nav_register">Регистрация</a>
+        {% endif %}
+        <div class="lang-switcher">
+            <button class="lang-btn" data-lang="uz" onclick="setLang('uz')">UZ</button>
+            <button class="lang-btn" data-lang="ru" onclick="setLang('ru')">RU</button>
+            <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+        </div>
+    </div>
+</nav>
+<div class="container{% block container_class %} narrow{% endblock %}">
+    {% block content %}{% endblock %}
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

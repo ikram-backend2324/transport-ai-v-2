@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .auth-wrap { max-width:400px; margin:0 auto; }
+    .auth-brand { text-align:center; margin-bottom:28px; animation:card-in 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+    .auth-brand-icon { width:60px; height:60px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 14px; box-shadow:0 0 28px rgba(0,210,255,0.25); }
+    .auth-title { font-family:var(--font-d); font-size:22px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:4px; }
+    .auth-sub { color:var(--muted); font-size:13px; }
+    .auth-footer { text-align:center; margin-top:16px; font-size:13px; color:var(--muted); }
+    .btn-full { width:100%; justify-content:center; }
+</style>
+<div class="auth-wrap">
+    <div class="auth-brand">
+        <div class="auth-brand-icon">🚗</div>
+        <div class="auth-title" data-i18n="login_title">Вход</div>
+        <div class="auth-sub">AI Transport — Claude Vision</div>
+    </div>
+    <div class="card" style="animation-delay:0.1s;">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div style="margin-bottom:16px;">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-full" data-i18n="login_btn">Войти</button>
+        </form>
+    </div>
+    <div class="auth-footer">
+        <span data-i18n="login_no_account">Нет аккаунта?</span>&nbsp;
+        <a href="/users/register/" class="link" data-i18n="login_register">Регистрация</a>
+    </div>
+</div>
+{% endblock %}
